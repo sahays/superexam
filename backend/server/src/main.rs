@@ -1,5 +1,17 @@
 mod db;
 
+pub mod pb {
+    pub mod ingestion {
+        tonic::include_proto!("superexam.ingestion");
+    }
+    pub mod exam {
+        tonic::include_proto!("superexam.exam");
+    }
+    pub mod history {
+        tonic::include_proto!("superexam.history");
+    }
+}
+
 use dotenv::dotenv;
 use anyhow::Result;
 

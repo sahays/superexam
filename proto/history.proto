@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package superexam.history;
+
+service HistoryService {
+  rpc ListExams (ListExamsRequest) returns (ExamList);
+  rpc GetExamDetails (GetExamDetailsRequest) returns (ExamDetails);
+}
+
+message ListExamsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ExamList {
+  repeated ExamSummary exams = 1;
+  string next_page_token = 2;
+}
+
+message ExamSummary {
+  string exam_id = 1;
+  int64 timestamp = 2;
+  int32 score = 3;
+  int32 total_questions = 4;
+}
+
+message GetExamDetailsRequest {
+  string exam_id = 1;
+}
+
+message ExamDetails {
+  ExamSummary summary = 1;
+  repeated QuestionResult questions = 2;
+}
+
+message QuestionResult {
+  string question_id = 1;
+  string question_text = 2;
+  repeated string user_choice_ids = 3;
+  repeated string correct_choice_ids = 4;
+  string explanation = 5;
+}
