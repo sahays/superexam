@@ -29,9 +29,13 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 - [ ] Create a local directory structure for storing extracted images.
 
 ### Story 1.3: gRPC & Protobuf Definition
-- [ ] Define strictly typed `.proto` files for all services (Ingestion, Exam, History).
-- [ ] Implement mapping logic in Rust to convert between Protobuf messages (API layer) and Firestore Documents/JSON (Storage layer).
-- [ ] Configure `tonic` (Rust) and `grpc` (Dart) code generation.
+- [x] Define strictly typed `.proto` files for all services (Ingestion, Exam, History).
+- [x] Implement mapping logic in Rust to convert between Protobuf messages (API layer) and Firestore Documents/JSON (Storage layer).
+- [x] Configure `tonic` (Rust) and `grpc` (Dart) code generation.
+
+### Story 1.4: Refinement & Standards
+- [ ] **Auth:** Support Default Application Credentials (ADC) for Google Cloud auth (via `gcloud auth login`) to avoid managing service account keys locally.
+- [ ] **Documentation:** Create a `docs/design_spec.md` defining project patterns, naming conventions (Rust/Flutter/Proto), and architectural best practices.
 
 ---
 

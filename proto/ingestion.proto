@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package superexam.ingestion;
+
+service IngestionService {
+  // Uploads a PDF file and receives a stream of status updates during processing.
+  rpc UploadPdf (stream UploadRequest) returns (stream IngestionStatus);
+}
+
+message UploadRequest {
+  oneof payload {
+    FileMetadata metadata = 1;
+    bytes chunk = 2;
+  }
+}
+
+message FileMetadata {
+  string filename = 1;
+  string content_type = 2; // e.g., "application/pdf"
+}
+
+message IngestionStatus {
+  enum State {
+    QUEUED = 0;
+    PROCESSING_TEXT = 1;
+    EXTRACTING_IMAGES = 2;
+    SAVING = 3;
+    COMPLETED = 4;
+    FAILED = 5;
+  }
+  
+  State state = 1;
+  string message = 2;
+  string document_id = 3; // Available when completed
+  int32 progress_percent = 4;
+}
