@@ -4,9 +4,15 @@ target/
 
 # System
 .DS_Store
+.env
 
 # IDEs
 .idea/
 .vscode/
 *.swp
 *.iml
+
+# Application Data
+backend/storage/
+service-account.json
+**/service-account.json
