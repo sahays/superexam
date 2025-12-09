@@ -4,8 +4,10 @@
 A quiz application allowing users to upload PDFs. The system uses **Google Gemini APIs** to parse the PDF, extracting questions, choices, answers, and images into a fixed JSON format. The extraction happens in the background with the frontend updated with its current status. Users can take exam after the extraction is complete. The scope of exam is the document. Built with Flutter Web, Rust (gRPC), Firestore, and Gemini AI.
 
 ## Tech Stack
-- **Frontend:** Flutter Web
-- **Backend:** Rust
+For detailed architectural patterns (Rust Controller/Service/Repository) and UI design specifications (SaaS Admin Panel), please refer to [docs/design_spec.md](design_spec.md).
+
+- **Frontend:** Flutter Web (SaaS Admin Style)
+- **Backend:** Rust (Layered Architecture)
 - **Communication:** gRPC Web (Protobuf)
 - **Database:** Google Cloud Firestore
 - **File Storage:** Local file system (for images)
