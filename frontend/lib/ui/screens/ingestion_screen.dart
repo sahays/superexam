@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/services/ingestion_service.dart';
 import 'package:frontend/proto/ingestion.pb.dart' as proto;
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 class IngestionScreen extends StatefulWidget {
   const IngestionScreen({super.key});
@@ -26,6 +27,9 @@ class _IngestionScreenState extends State<IngestionScreen> with SingleTickerProv
   
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
+
+  // Hover state for the main button
+  bool _isButtonHovered = false;
 
   @override
   void initState() {
@@ -108,268 +112,387 @@ class _IngestionScreenState extends State<IngestionScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    // Colors from Design Spec
-    const bgColor = Color(0xFFF0F4F8);
-    const textPrimary = Color(0xFF1F2937);
-    const textSecondary = Color(0xFF6B7280);
-    const primaryBlue = Color(0xFF3B82F6);
+    // 1. Detect Theme Mode
+    final brightness = MediaQuery.of(context).platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
+    // 2. Define Palettes
+    // Dark Mode (Neon Glass)
+    final bgDark = const Color(0xFF0F111A);
+    final cardDark = const Color(0xFF151725);
+    final borderDark = const Color(0xFFFFFFFF).withOpacity(0.12); // Slightly clearer border
+    final textPrimaryDark = const Color(0xFFFFFFFF);
+    final textSecondaryDark = const Color(0xFF9CA3AF);
+    final accentDark = const Color(0xFF3B82F6);
+    
+    // Light Mode (Frosted Glass)
+    final bgLight = const Color(0xFFF0F4F8); // Keep base, but we will add rich gradients
+    final cardLight = const Color(0xFFFFFFFF);
+    final borderLight = const Color(0xFFFFFFFF);
+    final textPrimaryLight = const Color(0xFF1F2937);
+    final textSecondaryLight = const Color(0xFF64748B);
+    final accentLight = const Color(0xFF2563EB);
+
+    final cardColor = isDark ? cardDark : cardLight;
+    final borderColor = isDark ? borderDark : borderLight;
+    final textPrimary = isDark ? textPrimaryDark : textPrimaryLight;
+    final textSecondary = isDark ? textSecondaryDark : textSecondaryLight;
+    final accentColor = isDark ? accentDark : accentLight;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: isDark ? bgDark : bgLight,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           'Exam Ingestion', 
           style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w700, 
-            color: textPrimary
+            color: textPrimary,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: IconThemeData(color: textPrimary),
       ),
       body: Stack(
         children: [
-          // Background Gradient Orbs (Subtle decoration for glassmorphism)
+          // --- BACKGROUND LAYER ---
+          
+          // 1. Base Gradient (Mesh)
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark 
+                  ? [const Color(0xFF0F111A), const Color(0xFF1A1D2D)]
+                  : [const Color(0xFFF0F4F8), const Color(0xFFE2E8F0)],
+              ),
+            ),
+          ),
+
+          // 2. Large Color Washes (Replacing isolated orbs)
+          // Top Left - Blue/Purple
           Positioned(
-            top: -100,
+            top: -200,
+            left: -100,
+            child: Container(
+              width: 800,
+              height: 800,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    (isDark ? const Color(0xFF3B82F6) : const Color(0xFFA78BFA)).withOpacity(0.15),
+                    Colors.transparent
+                  ],
+                  radius: 0.6,
+                ),
+              ),
+            ),
+          ),
+          // Bottom Right - Warm/Secondary
+          Positioned(
+            bottom: -200,
             right: -100,
             child: Container(
-              width: 400,
-              height: 400,
+              width: 800,
+              height: 800,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [const Color(0xFFA78BFA).withOpacity(0.3), const Color(0xFF8B5CF6).withOpacity(0.3)],
+                gradient: RadialGradient(
+                  colors: [
+                    (isDark ? const Color(0xFF8B5CF6) : const Color(0xFFFDBA74)).withOpacity(0.15),
+                    Colors.transparent
+                  ],
+                  radius: 0.6,
                 ),
               ),
             ),
           ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [const Color(0xFFFDBA74).withOpacity(0.3), const Color(0xFFF87171).withOpacity(0.3)],
-                ),
+
+          // 3. Tech Grid Overlay (Custom Painter)
+          Positioned.fill(
+            child: CustomPaint(
+              painter: GridPatternPainter(
+                color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+                spacing: 40,
               ),
             ),
           ),
-          
-          // Main Content
+
+          // --- CONTENT LAYER ---
           Center(
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      width: 600,
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withOpacity(0.5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Glass Card
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Stronger blur
+                        child: Container(
+                          width: 600,
+                          padding: const EdgeInsets.all(40), // More breathing room
+                          decoration: BoxDecoration(
+                            color: isDark ? cardColor.withOpacity(0.65) : cardColor.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: isDark ? borderColor : Colors.white.withOpacity(0.8), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFF3B82F6).withOpacity(0.1),
+                                blurRadius: 40,
+                                offset: const Offset(0, 20),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Upload Exam Document',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Upload a PDF to parse questions and answers automatically.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              color: textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          
-                          // File Picker Area
-                          InkWell(
-                            onTap: _pickFile,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              height: 180,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: _selectedFileName != null ? primaryBlue : Colors.grey.shade300,
-                                  width: 2,
-                                  style: BorderStyle.none, // Can't do dashed easily without CustomPaint, using solid for now but styled
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Upload Document',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 32, // Larger title
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                  letterSpacing: -0.5,
                                 ),
                               ),
-                              child: CustomPaint(
-                                painter: DashedBorderPainter(
-                                  color: _selectedFileName != null ? primaryBlue : Colors.grey.shade400,
-                                  strokeWidth: 2,
-                                  gap: 8,
+                              const SizedBox(height: 12),
+                              Text(
+                                'Upload a PDF to parse questions and answers automatically.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  color: textSecondary,
+                                  height: 1.5,
                                 ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        _selectedFileName != null ? Icons.check_circle : Icons.cloud_upload_rounded,
-                                        size: 48,
-                                        color: _selectedFileName != null ? primaryBlue : textSecondary,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        _selectedFileName ?? 'Click to browse or drop file here',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: textPrimary,
-                                        ),
-                                      ),
-                                      if (_selectedFileName == null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 8),
-                                          child: Text(
-                                            'PDF files only',
-                                            style: GoogleFonts.inter(fontSize: 12, color: textSecondary),
+                              ),
+                              const SizedBox(height: 40),
+                              
+                              // File Picker (Drop Zone)
+                              InkWell(
+                                onTap: _pickFile,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  height: 220,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: _selectedFileName != null ? accentColor : (isDark ? Colors.white10 : Colors.grey.shade300),
+                                      width: 2,
+                                      style: BorderStyle.none, 
+                                    ),
+                                  ),
+                                  child: CustomPaint(
+                                    painter: DashedBorderPainter(
+                                      color: _selectedFileName != null ? accentColor : (isDark ? Colors.white24 : Colors.grey.shade400),
+                                      strokeWidth: 2,
+                                      gap: 8,
+                                      radius: 20,
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 300),
+                                            padding: const EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: _selectedFileName != null 
+                                                  ? accentColor.withOpacity(0.15) 
+                                                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100),
+                                              boxShadow: _selectedFileName != null ? [
+                                                BoxShadow(
+                                                  color: accentColor.withOpacity(0.5),
+                                                  blurRadius: 25,
+                                                  spreadRadius: 2,
+                                                )
+                                              ] : [],
+                                            ),
+                                            child: Icon(
+                                              _selectedFileName != null ? Icons.check_rounded : Icons.cloud_upload_rounded,
+                                              size: 40,
+                                              color: _selectedFileName != null ? accentColor : textSecondary,
+                                            ),
                                           ),
-                                        ),
-                                    ],
+                                          const SizedBox(height: 20),
+                                          Text(
+                                            _selectedFileName ?? 'Click to browse',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: textPrimary,
+                                            ),
+                                          ),
+                                          if (_selectedFileName == null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 8),
+                                              child: Text(
+                                                'Max size 10MB',
+                                                style: GoogleFonts.inter(fontSize: 14, color: textSecondary.withOpacity(0.7)),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // User Prompt
-                          TextField(
-                            controller: _promptController,
-                            maxLines: 3,
-                            style: GoogleFonts.inter(color: textPrimary),
-                            decoration: InputDecoration(
-                              labelText: 'Custom Parsing Instructions (Optional)',
-                              hintText: 'e.g., "Ignore the first section", "Extract only multiple choice"',
-                              labelStyle: GoogleFonts.inter(color: textSecondary),
-                              hintStyle: GoogleFonts.inter(color: textSecondary.withOpacity(0.7)),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.5),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
+                              
+                              const SizedBox(height: 32),
+                              
+                              // Input
+                              TextField(
+                                controller: _promptController,
+                                maxLines: 3,
+                                style: GoogleFonts.inter(color: textPrimary),
+                                cursorColor: accentColor,
+                                decoration: InputDecoration(
+                                  labelText: 'Custom Instructions (Optional)',
+                                  hintText: 'e.g., "Focus on chapter 3 questions"',
+                                  labelStyle: GoogleFonts.inter(color: textSecondary),
+                                  hintStyle: GoogleFonts.inter(color: textSecondary.withOpacity(0.5)),
+                                  filled: true,
+                                  fillColor: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.6),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade200),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(color: accentColor),
+                                  ),
+                                ),
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade200),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: primaryBlue),
-                              ),
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 32),
-                          
-                          // Progress Section
-                          if (_isUploading) ...[
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              
+                              const SizedBox(height: 40),
+                              
+                              // Progress / Action Button
+                              if (_isUploading) ...[
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'Processing...',
-                                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Processing...',
+                                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                                        ),
+                                        Text(
+                                          '${(_progress * 100).toInt()}%',
+                                          style: GoogleFonts.inter(fontSize: 14, color: textSecondary),
+                                        ),
+                                      ],
                                     ),
+                                    const SizedBox(height: 12),
+                                    // Custom Neon Progress Bar
+                                    Container(
+                                      height: 6,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(3),
+                                        color: isDark ? Colors.white10 : Colors.grey.shade200,
+                                      ),
+                                      child: LayoutBuilder(
+                                        builder: (ctx, constraints) {
+                                          return Stack(
+                                            children: [
+                                              AnimatedContainer(
+                                                duration: const Duration(milliseconds: 300),
+                                                width: constraints.maxWidth * _progress,
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(3),
+                                                  color: accentColor,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: accentColor.withOpacity(0.6),
+                                                      blurRadius: 8,
+                                                      spreadRadius: 1,
+                                                    )
+                                                  ]
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
                                     Text(
-                                      '${(_progress * 100).toInt()}%',
-                                      style: GoogleFonts.inter(fontSize: 14, color: textSecondary),
+                                      _logs.isNotEmpty ? _logs.last.message : 'Initializing...',
+                                      style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: _progress,
-                                    backgroundColor: Colors.grey.shade200,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(primaryBlue),
-                                    minHeight: 8,
+                              ] else
+                                // Hoverable Action Button
+                                MouseRegion(
+                                  onEnter: (_) => setState(() => _isButtonHovered = true),
+                                  onExit: (_) => setState(() => _isButtonHovered = false),
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: _selectedFileData == null ? null : _startUpload,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        gradient: LinearGradient(
+                                          colors: isDark 
+                                            ? [const Color(0xFF3B82F6), const Color(0xFF2563EB)]
+                                            : [const Color(0xFFA78BFA), const Color(0xFF8B5CF6)],
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (isDark ? const Color(0xFF3B82F6) : const Color(0xFF8B5CF6))
+                                                .withOpacity(_isButtonHovered ? 0.6 : 0.4),
+                                            blurRadius: _isButtonHovered ? 24 : 16,
+                                            offset: const Offset(0, 4),
+                                            spreadRadius: _isButtonHovered ? 2 : 0,
+                                          ),
+                                        ],
+                                        // Slight scale up logic handled by container size if needed, 
+                                        // but shadows often enough. Or use transform.
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.bolt_rounded, color: Colors.white),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Process Document',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _logs.isNotEmpty ? _logs.last.message : 'Initializing...',
-                                  style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
-                                ),
-                              ],
-                            ),
-                          ] else
-                            // Action Button
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFA78BFA), Color(0xFF8B5CF6)], // Purple Gradient
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF8B5CF6).withOpacity(0.4),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: _selectedFileData == null ? null : _startUpload,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                child: Text(
-                                  'Process Document',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -380,13 +503,49 @@ class _IngestionScreenState extends State<IngestionScreen> with SingleTickerProv
   }
 }
 
-// Simple Painter for dashed border
+// Custom Painter for Tech Grid
+class GridPatternPainter extends CustomPainter {
+  final Color color;
+  final double spacing;
+
+  GridPatternPainter({required this.color, required this.spacing});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+
+    // Draw vertical lines
+    for (double x = 0; x < size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+
+    // Draw horizontal lines
+    for (double y = 0; y < size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant GridPatternPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.spacing != spacing;
+  }
+}
+
+// Simple Painter for dashed border (Updated with radius)
 class DashedBorderPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
   final double gap;
+  final double radius;
 
-  DashedBorderPainter({required this.color, this.strokeWidth = 2, this.gap = 5.0});
+  DashedBorderPainter({
+    required this.color, 
+    this.strokeWidth = 2, 
+    this.gap = 5.0,
+    this.radius = 16.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -398,7 +557,7 @@ class DashedBorderPainter extends CustomPainter {
     final Path path = Path()
       ..addRRect(RRect.fromRectAndRadius(
         Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(16),
+        Radius.circular(radius),
       ));
 
     final Path dashedPath = Path();
@@ -419,4 +578,3 @@ class DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

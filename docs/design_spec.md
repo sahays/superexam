@@ -80,31 +80,65 @@ The frontend will be designed as a **SaaS-style Admin Dashboard**, prioritizing 
     ```
 
 ### UX & Theming
-- **Design Philosophy:**
-  - **Mobile-First:** Fully responsive layouts that adapt seamlessly from mobile screens to large desktop monitors.
-  - **Theme:** Automatic switching between **Dark** and **Light** modes based on system settings.
-- **Visuals & Styling:**
-  - **Color Scheme:**
-    - **Background:** Light Grey-Blue `#F0F4F8`.
-    - **Primary Accent:** Vibrant Blue `#3B82F6`.
-    - **Gradients:** Subtle, soft gradients. Purple (`#A78BFA` -> `#8B5CF6`) and Warm Orange/Red (`#FDBA74` -> `#F87171`).
-    - **Text:** Dark Charcoal `#1F2937` (Primary), Medium Grey `#6B7280` (Secondary).
-    - **Functional:** Green `#22C55E` (Success), Red `#EF4444` (Error).
+- **Design Philosophy:** **"Luminous Data" & "Bento Box"**.
+  - The interface treats data as a vibrant, glowing entity. Content is organized into a modular grid of self-contained rectangular "Bento" boxes.
+  - **Dark Mode (Default):** "Neon Glassmorphism". Deep void backgrounds, glowing neon accents, and high-contrast data visualization.
+  - **Light Mode:** "Clean Frosted Glass". Soft, airy backgrounds, crisp shadows, and frosted glass panels, maintaining the strict modular structure of the dark mode.
+
+- **Design Tokens:**
+  - **Color Palette (Dark Mode):**
+    - **Background Base:** Linear Gradient `#0F111A` -> `#1A1D2D`.
+    - **Surface/Cards:** `#151725` (Opacity: 0.65).
+    - **Border:** `#FFFFFF` (Opacity: 0.12).
+    - **Primary Text:** `#FFFFFF`.
+    - **Secondary Text:** `#9CA3AF`.
+    - **Accent (Action):** `#3B82F6` (Electric Blue).
+    - **Ambient Glows:** Blue `#3B82F6` (Opacity: 0.15) & Purple `#8B5CF6` (Opacity: 0.15).
+    - **Tech Grid Overlay:** `#FFFFFF` (Opacity: 0.03).
+  - **Color Palette (Light Mode):**
+    - **Background Base:** Linear Gradient `#F0F4F8` -> `#E2E8F0`.
+    - **Surface/Cards:** `#FFFFFF` (Opacity: 0.6).
+    - **Border:** `#FFFFFF` (Opacity: 0.8).
+    - **Primary Text:** `#1F2937`.
+    - **Secondary Text:** `#64748B`.
+    - **Accent (Action):** `#2563EB` (Royal Blue).
+    - **Ambient Glows:** Purple `#A78BFA` (Opacity: 0.15) & Orange `#FDBA74` (Opacity: 0.15).
+    - **Tech Grid Overlay:** `#000000` (Opacity: 0.03).
   - **Typography:**
-    - **Headings:** *Plus Jakarta Sans* (Geometric, friendly).
-    - **Body:** *Inter* (Clean, versatile, legible).
-  - **Effects:**
-    - **Glassmorphism:** Use semi-transparent white backgrounds (`rgba(255, 255, 255, 0.7)`) with backdrop blur (`backdrop-filter: blur(10px)`) for cards and overlays to create a modern, glass-like depth.
+    - **Headings:** *Plus Jakarta Sans* (Weights: 700/Bold).
+    - **Body:** *Inter* (Weights: 400/Regular, 500/Medium).
+  - **Animations:**
+    - **Entrance Fade:** Duration: `800ms`, Curve: `Curves.easeOut`.
+    - **Hover Effects:** Duration: `200ms`, Curve: `Curves.easeInOut`.
+  - **Component Styles:**
+    - **Glass Blur:** `BackdropFilter` with `sigmaX: 20`, `sigmaY: 20`.
+    - **Card Border Radius:** `24px`.
+    - **Button/Input Border Radius:** `16px`.
+    - **Shadows:** Deep, soft shadows (Blur Radius: `30px-40px`) to lift elements off the textured background.
 
 ### Layout & Components
-- **Core Layout:**
-  - **Navigation:** Collapsible Sidebar (Drawer) for main navigation + Top Bar for global actions/profile.
-  - **Content:** Card-based layout with adequate padding and distinct separation of sections.
+- **Core Layout:** **Bento Grid**.
+  - The screen is divided into a strict grid of modular containers. Each "box" is an independent widget (e.g., "Upload Zone", "Recent Exams", "Stats").
+  - **Spacing:** Generous gaps (20px+) between modules to let the background "breathe".
 - **Components:**
-  - **Cards:** Glassmorphic style with subtle borders (`1px solid rgba(255,255,255,0.5)`) and soft shadows (`box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1)`).
-  - **Rich Interactions:** Buttons with ripple effects, cards with hover elevation, and smooth route transitions.
-  - **Data Visualization:** Use charts (Bar, Pie, Line) to visualize exam results and history.
-  - **Animations:** Subtle entrance animations for lists and loading states (shimmer effects).
+  - **Modules (Cards):** heavily rounded corners (`border-radius: 24px`).
+  - **Glow Effects:** Use gradients to simulate "light sources" highlighting active areas (e.g., a blue glow pulsing behind the file upload drop zone).
+  - **Data Visualization:**
+    - Charts should use **Gradient Fills** that fade to transparent.
+    - Lines should be thick and smooth (Bezier curves).
+  - **Navigation:** Floating dock or segmented sidebar that adheres to the glass aesthetic.
+
+### Layout & Components
+- **Core Layout:** **Bento Grid**.
+  - The screen is divided into a strict grid of modular containers. Each "box" is an independent widget (e.g., "Upload Zone", "Recent Exams", "Stats").
+  - **Spacing:** Generous gaps (20px+) between modules to let the background "breathe".
+- **Components:**
+  - **Modules (Cards):** heavily rounded corners (`border-radius: 24px`).
+  - **Glow Effects:** Use gradients to simulate "light sources" highlighting active areas (e.g., a blue glow pulsing behind the file upload drop zone).
+  - **Data Visualization:**
+    - Charts should use **Gradient Fills** that fade to transparent.
+    - Lines should be thick and smooth (Bezier curves).
+  - **Navigation:** Floating dock or segmented sidebar that adheres to the glass aesthetic.
 
 ### Best Practices
 - **Naming:**
