@@ -25,21 +25,16 @@ const UploadRequest$json = {
       '4': 1,
       '5': 11,
       '6': '.superexam.ingestion.FileMetadata',
-      '9': 0,
       '10': 'metadata'
     },
-    {'1': 'chunk', '3': 2, '4': 1, '5': 12, '9': 0, '10': 'chunk'},
-  ],
-  '8': [
-    {'1': 'payload'},
+    {'1': 'file_data', '3': 2, '4': 1, '5': 12, '10': 'fileData'},
   ],
 };
 
 /// Descriptor for `UploadRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List uploadRequestDescriptor = $convert.base64Decode(
-    'Cg1VcGxvYWRSZXF1ZXN0Ej8KCG1ldGFkYXRhGAEgASgLMiEuc3VwZXJleGFtLmluZ2VzdGlvbi'
-    '5GaWxlTWV0YWRhdGFIAFIIbWV0YWRhdGESFgoFY2h1bmsYAiABKAxIAFIFY2h1bmtCCQoHcGF5'
-    'bG9hZA==');
+    'Cg1VcGxvYWRSZXF1ZXN0Ej0KCG1ldGFkYXRhGAEgASgLMiEuc3VwZXJleGFtLmluZ2VzdGlvbi'
+    '5GaWxlTWV0YWRhdGFSCG1ldGFkYXRhEhsKCWZpbGVfZGF0YRgCIAEoDFIIZmlsZURhdGE=');
 
 @$core.Deprecated('Use fileMetadataDescriptor instead')
 const FileMetadata$json = {

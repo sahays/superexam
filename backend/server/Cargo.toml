@@ -19,6 +19,10 @@ uuid = { version = "1.10.0", features = ["v4"] }
 futures = "0.3"
 tokio-stream = "0.1"
 bytes = "1.6"
+rustls = { version = "0.23", features = ["ring"] }
+tonic-web = "0.12"
+http = "1.1"
+tower-http = { version = "0.6", features = ["cors"] }
 
 [build-dependencies]
 prost-build = "0.13"

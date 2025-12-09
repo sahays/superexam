@@ -1,14 +1,12 @@
-use tonic::{Request, Response, Status, Streaming};
+use crate::pb::ingestion::ingestion_service_server::IngestionService;
+use crate::pb::ingestion::{IngestionStatus, UploadRequest, ingestion_status};
+use firestore::FirestoreDb;
+use lopdf::Document;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tokio_stream::StreamExt;
-use std::sync::Arc;
-use firestore::FirestoreDb;
-use crate::pb::ingestion::ingestion_service_server::IngestionService;
-use crate::pb::ingestion::{UploadRequest, IngestionStatus, ingestion_status};
-use lopdf::Document;
+use tonic::{Request, Response, Status};
 use uuid::Uuid;
-use std::io::Cursor;
 
 pub struct IngestionServiceImpl {
     pub db: Arc<FirestoreDb>,
@@ -21,47 +19,26 @@ impl IngestionService for IngestionServiceImpl {
 
     async fn upload_pdf(
         &self,
-        request: Request<Streaming<UploadRequest>>,
+        request: Request<UploadRequest>,
     ) -> Result<Response<Self::UploadPdfStream>, Status> {
-        let mut stream = request.into_inner();
+        let req = request.into_inner();
         let (tx, rx) = mpsc::channel(4);
-        let db = self.db.clone();
-        let api_key = self.gemini_api_key.clone();
+        let _db = self.db.clone();
+        let _api_key = self.gemini_api_key.clone();
 
         tokio::spawn(async move {
-            let mut file_data = Vec::new();
-            let mut user_prompt = String::new();
-            let mut _filename = String::new();
-
-            // 1. Receive File
+            // 1. Receive File (Already received in Unary request)
             let _ = tx.send(Ok(IngestionStatus {
                 state: ingestion_status::State::Queued as i32,
-                message: "Receiving file...".to_string(),
+                message: "File received...".to_string(),
                 document_id: "".to_string(),
-                progress_percent: 0,
+                progress_percent: 10,
             })).await;
 
-            while let Some(result) = stream.next().await {
-                match result {
-                    Ok(req) => {
-                        if let Some(payload) = req.payload {
-                            match payload {
-                                crate::pb::ingestion::upload_request::Payload::Metadata(meta) => {
-                                    user_prompt = meta.user_prompt;
-                                    _filename = meta.filename;
-                                }
-                                crate::pb::ingestion::upload_request::Payload::Chunk(data) => {
-                                    file_data.extend_from_slice(&data);
-                                }
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        let _ = tx.send(Err(e)).await;
-                        return;
-                    }
-                }
-            }
+            let file_data = req.file_data;
+            let metadata = req.metadata.unwrap_or_default();
+            let user_prompt = metadata.user_prompt;
+            let _filename = metadata.filename;
 
             // 2. Extract Text (PDF Parsing)
             let _ = tx.send(Ok(IngestionStatus {
@@ -85,46 +62,55 @@ impl IngestionService for IngestionServiceImpl {
             };
 
             // 3. Call Gemini
-             let _ = tx.send(Ok(IngestionStatus {
-                state: ingestion_status::State::ProcessingText as i32,
-                message: "Consulting Gemini AI...".to_string(),
-                document_id: "".to_string(),
-                progress_percent: 40,
-            })).await;
+            let _ = tx
+                .send(Ok(IngestionStatus {
+                    state: ingestion_status::State::ProcessingText as i32,
+                    message: "Consulting Gemini AI...".to_string(),
+                    document_id: "".to_string(),
+                    progress_percent: 40,
+                }))
+                .await;
 
             // Prepare the prompt
-            let system_prompt = "You are an expert Exam Parser. Extract questions, choices, and answers into JSON.";
-            let full_prompt = format!("{}\n\nUser Instruction: {}\n\nDocument Text:\n{}", system_prompt, user_prompt, text_content);
-            
+            let system_prompt =
+                "You are an expert Exam Parser. Extract questions, choices, and answers into JSON.";
+            let _full_prompt = format!(
+                "{}\n\nUser Instruction: {}\n\nDocument Text:\n{}",
+                system_prompt, user_prompt, text_content
+            );
+
             // Mocking the call or implementing simple logic if API key is present
             // For this implementation, I'll log the prompt and simulate a delay/response if no key, or try to call if key exists.
-            
+
             // Note: In a real scenario, use reqwest to call https://generativelanguage.googleapis.com
             // For now, we simulate success to allow the flow to complete.
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
             // 4. Save to Firestore (Simulated)
-             let _ = tx.send(Ok(IngestionStatus {
-                state: ingestion_status::State::Saving as i32,
-                message: "Saving to database...".to_string(),
-                document_id: "".to_string(),
-                progress_percent: 80,
-            })).await;
-            
+            let _ = tx
+                .send(Ok(IngestionStatus {
+                    state: ingestion_status::State::Saving as i32,
+                    message: "Saving to database...".to_string(),
+                    document_id: "".to_string(),
+                    progress_percent: 80,
+                }))
+                .await;
+
             // Create a dummy document ID
             let doc_id = Uuid::new_v4().to_string();
-            
+
             // Here we would use `db` to write the result.
             // db.fluent().insert().into("exams").document_id(&doc_id).object(&extraction_result).execute().await...
 
             // 5. Complete
-             let _ = tx.send(Ok(IngestionStatus {
-                state: ingestion_status::State::Completed as i32,
-                message: "Extraction complete!".to_string(),
-                document_id: doc_id,
-                progress_percent: 100,
-            })).await;
-
+            let _ = tx
+                .send(Ok(IngestionStatus {
+                    state: ingestion_status::State::Completed as i32,
+                    message: "Extraction complete!".to_string(),
+                    document_id: doc_id,
+                    progress_percent: 100,
+                }))
+                .await;
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))

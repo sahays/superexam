@@ -12,9 +12,9 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  protobuf: ^3.1.0
-  grpc: ^3.2.4
-  file_picker: ^8.0.0
+  protobuf: ^5.1.0
+  grpc: ^5.0.0
+  file_picker: ^10.3.7
   flutter_riverpod: ^2.5.1
   google_fonts: ^6.2.1
   fixnum: ^1.1.0
@@ -23,8 +23,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^4.0.0
-  protoc_plugin: ^21.1.2
+  flutter_lints: ^6.0.0
+  protoc_plugin: ^24.0.0
 
 flutter:
   uses-material-design: true

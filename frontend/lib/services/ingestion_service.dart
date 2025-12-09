@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'package:grpc/grpc.dart';
 import 'package:frontend/proto/ingestion.pbgrpc.dart';
+import 'package:frontend/services/grpc_channel.dart';
 import 'dart:typed_data';
 
 class IngestionService {
   late IngestionServiceClient _stub;
-  ClientChannel? _channel;
+  dynamic _channel;
 
   IngestionService() {
-    _channel = ClientChannel(
-      'localhost',
-      port: 50051,
-      options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
-    );
+    _channel = getGrpcChannel('localhost', 50051);
     _stub = IngestionServiceClient(_channel!);
   }
 
@@ -22,16 +19,13 @@ class IngestionService {
       ..contentType = 'application/pdf'
       ..userPrompt = userPrompt;
 
-    // Create a stream of requests
-    // First, send metadata
-    final metadataReq = UploadRequest()..metadata = metadata;
-    
-    // Then chunks (simplification: sending one big chunk for now, usually we split)
-    final chunkReq = UploadRequest()..chunk = data;
+    // Send a single request with both metadata and file data
+    final request = UploadRequest()
+      ..metadata = metadata
+      ..fileData = data;
 
-    final requestStream = Stream.fromIterable([metadataReq, chunkReq]);
-
-    final responseStream = _stub.uploadPdf(requestStream);
+    // Call the RPC with the single request object
+    final responseStream = _stub.uploadPdf(request);
 
     await for (var status in responseStream) {
       yield status;

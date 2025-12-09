@@ -3,15 +3,14 @@ syntax = "proto3";
 package superexam.ingestion;
 
 service IngestionService {
-  // Uploads a PDF file and receives a stream of status updates during processing.
-  rpc UploadPdf (stream UploadRequest) returns (stream IngestionStatus);
+  // Uploads a PDF file (as a single message) and receives a stream of status updates.
+  // Changed from bidirectional streaming to support gRPC-Web.
+  rpc UploadPdf (UploadRequest) returns (stream IngestionStatus);
 }
 
 message UploadRequest {
-  oneof payload {
-    FileMetadata metadata = 1;
-    bytes chunk = 2;
-  }
+  FileMetadata metadata = 1;
+  bytes file_data = 2;
 }
 
 message FileMetadata {

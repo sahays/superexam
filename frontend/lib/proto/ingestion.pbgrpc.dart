@@ -32,12 +32,15 @@ class IngestionServiceClient extends $grpc.Client {
 
   IngestionServiceClient(super.channel, {super.options, super.interceptors});
 
-  /// Uploads a PDF file and receives a stream of status updates during processing.
+  /// Uploads a PDF file (as a single message) and receives a stream of status updates.
+  /// Changed from bidirectional streaming to support gRPC-Web.
   $grpc.ResponseStream<$0.IngestionStatus> uploadPdf(
-    $async.Stream<$0.UploadRequest> request, {
+    $0.UploadRequest request, {
     $grpc.CallOptions? options,
   }) {
-    return $createStreamingCall(_$uploadPdf, request, options: options);
+    return $createStreamingCall(
+        _$uploadPdf, $async.Stream.fromIterable([request]),
+        options: options);
   }
 
   // method descriptors
@@ -56,13 +59,18 @@ abstract class IngestionServiceBase extends $grpc.Service {
   IngestionServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.UploadRequest, $0.IngestionStatus>(
         'UploadPdf',
-        uploadPdf,
-        true,
+        uploadPdf_Pre,
+        false,
         true,
         ($core.List<$core.int> value) => $0.UploadRequest.fromBuffer(value),
         ($0.IngestionStatus value) => value.writeToBuffer()));
   }
 
+  $async.Stream<$0.IngestionStatus> uploadPdf_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.UploadRequest> $request) async* {
+    yield* uploadPdf($call, await $request);
+  }
+
   $async.Stream<$0.IngestionStatus> uploadPdf(
-      $grpc.ServiceCall call, $async.Stream<$0.UploadRequest> request);
+      $grpc.ServiceCall call, $0.UploadRequest request);
 }

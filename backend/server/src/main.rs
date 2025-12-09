@@ -13,21 +13,27 @@ pub mod pb {
     }
 }
 
-use dotenv::dotenv;
-use anyhow::Result;
-use tonic::transport::Server;
-use std::sync::Arc;
-use crate::services::ingestion::IngestionServiceImpl;
 use crate::pb::ingestion::ingestion_service_server::IngestionServiceServer;
+use crate::services::ingestion::IngestionServiceImpl;
+use anyhow::Result;
+use dotenv::dotenv;
 use std::env;
+use std::sync::Arc;
+use tonic::transport::Server;
+use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Explicitly set the CryptoProvider to ring to avoid ambiguity between ring and aws-lc-rs
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     dotenv().ok();
     println!("Starting SuperExam Server...");
 
     let db = db::init_firestore().await;
-    
+
     let database = match db {
         Ok(db) => {
             println!("Firestore connected successfully.");
@@ -51,9 +57,17 @@ async fn main() -> Result<()> {
 
     println!("gRPC Server listening on {}", addr);
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_headers(Any)
+        .allow_methods(Any);
+
     Server::builder()
-        .accept_http1(true) // Support for gRPC-Web if using a proxy, or general robustness
-        .add_service(IngestionServiceServer::new(ingestion_service))
+        .accept_http1(true) // Support for gRPC-Web
+        .layer(cors)
+        .add_service(tonic_web::enable(IngestionServiceServer::new(
+            ingestion_service,
+        )))
         .serve(addr)
         .await?;
 

@@ -20,16 +20,14 @@ export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'ingestion.pbenum.dart';
 
-enum UploadRequest_Payload { metadata, chunk, notSet }
-
 class UploadRequest extends $pb.GeneratedMessage {
   factory UploadRequest({
     FileMetadata? metadata,
-    $core.List<$core.int>? chunk,
+    $core.List<$core.int>? fileData,
   }) {
     final result = create();
     if (metadata != null) result.metadata = metadata;
-    if (chunk != null) result.chunk = chunk;
+    if (fileData != null) result.fileData = fileData;
     return result;
   }
 
@@ -42,22 +40,15 @@ class UploadRequest extends $pb.GeneratedMessage {
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
       create()..mergeFromJson(json, registry);
 
-  static const $core.Map<$core.int, UploadRequest_Payload>
-      _UploadRequest_PayloadByTag = {
-    1: UploadRequest_Payload.metadata,
-    2: UploadRequest_Payload.chunk,
-    0: UploadRequest_Payload.notSet
-  };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'UploadRequest',
       package:
           const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
       createEmptyInstance: create)
-    ..oo(0, [1, 2])
     ..aOM<FileMetadata>(1, _omitFieldNames ? '' : 'metadata',
         subBuilder: FileMetadata.create)
     ..a<$core.List<$core.int>>(
-        2, _omitFieldNames ? '' : 'chunk', $pb.PbFieldType.OY)
+        2, _omitFieldNames ? '' : 'fileData', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -80,14 +71,6 @@ class UploadRequest extends $pb.GeneratedMessage {
   static UploadRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
-  @$pb.TagNumber(2)
-  UploadRequest_Payload whichPayload() =>
-      _UploadRequest_PayloadByTag[$_whichOneof(0)]!;
-  @$pb.TagNumber(1)
-  @$pb.TagNumber(2)
-  void clearPayload() => $_clearField($_whichOneof(0));
-
-  @$pb.TagNumber(1)
   FileMetadata get metadata => $_getN(0);
   @$pb.TagNumber(1)
   set metadata(FileMetadata value) => $_setField(1, value);
@@ -99,13 +82,13 @@ class UploadRequest extends $pb.GeneratedMessage {
   FileMetadata ensureMetadata() => $_ensure(0);
 
   @$pb.TagNumber(2)
-  $core.List<$core.int> get chunk => $_getN(1);
+  $core.List<$core.int> get fileData => $_getN(1);
   @$pb.TagNumber(2)
-  set chunk($core.List<$core.int> value) => $_setBytes(1, value);
+  set fileData($core.List<$core.int> value) => $_setBytes(1, value);
   @$pb.TagNumber(2)
-  $core.bool hasChunk() => $_has(1);
+  $core.bool hasFileData() => $_has(1);
   @$pb.TagNumber(2)
-  void clearChunk() => $_clearField(2);
+  void clearFileData() => $_clearField(2);
 }
 
 class FileMetadata extends $pb.GeneratedMessage {
