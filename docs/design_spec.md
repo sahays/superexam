@@ -84,8 +84,15 @@ The frontend will be designed as a **SaaS-style Admin Dashboard**, prioritizing 
   - **Mobile-First:** Fully responsive layouts that adapt seamlessly from mobile screens to large desktop monitors.
   - **Theme:** Automatic switching between **Dark** and **Light** modes based on system settings.
 - **Visuals & Styling:**
-  - **Color Scheme:** High-contrast, vibrant design using **gradients** (e.g., Blue-Purple, Orange-Red) and bright accent colors.
-  - **Typography:** Modern, legible Sans-Serif fonts (e.g., *Poppins* or *Inter*).
+  - **Color Scheme:**
+    - **Background:** Light Grey-Blue `#F0F4F8`.
+    - **Primary Accent:** Vibrant Blue `#3B82F6`.
+    - **Gradients:** Purple (`#A78BFA` -> `#8B5CF6`) and Warm Orange/Red (`#FDBA74` -> `#F87171`).
+    - **Text:** Dark Charcoal `#1F2937` (Primary), Medium Grey `#6B7280` (Secondary).
+    - **Functional:** Green `#22C55E` (Success), Red `#EF4444` (Error).
+  - **Typography:**
+    - **Headings:** *Plus Jakarta Sans* (Geometric, friendly).
+    - **Body:** *Inter* (Clean, versatile, legible).
 
 ### Layout & Components
 - **Core Layout:**
