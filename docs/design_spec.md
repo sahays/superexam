@@ -87,18 +87,21 @@ The frontend will be designed as a **SaaS-style Admin Dashboard**, prioritizing 
   - **Color Scheme:**
     - **Background:** Light Grey-Blue `#F0F4F8`.
     - **Primary Accent:** Vibrant Blue `#3B82F6`.
-    - **Gradients:** Purple (`#A78BFA` -> `#8B5CF6`) and Warm Orange/Red (`#FDBA74` -> `#F87171`).
+    - **Gradients:** Subtle, soft gradients. Purple (`#A78BFA` -> `#8B5CF6`) and Warm Orange/Red (`#FDBA74` -> `#F87171`).
     - **Text:** Dark Charcoal `#1F2937` (Primary), Medium Grey `#6B7280` (Secondary).
     - **Functional:** Green `#22C55E` (Success), Red `#EF4444` (Error).
   - **Typography:**
     - **Headings:** *Plus Jakarta Sans* (Geometric, friendly).
     - **Body:** *Inter* (Clean, versatile, legible).
+  - **Effects:**
+    - **Glassmorphism:** Use semi-transparent white backgrounds (`rgba(255, 255, 255, 0.7)`) with backdrop blur (`backdrop-filter: blur(10px)`) for cards and overlays to create a modern, glass-like depth.
 
 ### Layout & Components
 - **Core Layout:**
   - **Navigation:** Collapsible Sidebar (Drawer) for main navigation + Top Bar for global actions/profile.
   - **Content:** Card-based layout with adequate padding and distinct separation of sections.
 - **Components:**
+  - **Cards:** Glassmorphic style with subtle borders (`1px solid rgba(255,255,255,0.5)`) and soft shadows (`box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1)`).
   - **Rich Interactions:** Buttons with ripple effects, cards with hover elevation, and smooth route transitions.
   - **Data Visualization:** Use charts (Bar, Pie, Line) to visualize exam results and history.
   - **Animations:** Subtle entrance animations for lists and loading states (shimmer effects).
