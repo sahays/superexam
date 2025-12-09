@@ -22,15 +22,28 @@ async fn main() -> Result<()> {
 
     let db = db::init_firestore().await;
     
-    match db {
-        Ok(_database) => {
-            println!("Firestore connected successfully.");
+        match db {
+    
+            Ok(_database) => {
+    
+                println!("Firestore connected successfully.");
+    
+            }
+    
+            Err(e) => {
+    
+                eprintln!("Failed to connect to Firestore: {}", e);
+    
+                eprintln!("Ensure GOOGLE_APPLICATION_CREDENTIALS is set, or run `gcloud auth application-default login` for ADC.");
+    
+            }
+    
         }
-        Err(e) => {
-            eprintln!("Failed to connect to Firestore: {}", e);
-            eprintln!("Ensure GOOGLE_APPLICATION_CREDENTIALS is set and points to a valid service account JSON.");
-        }
+    
+    
+    
+        Ok(())
+    
     }
-
-    Ok(())
-}
+    
+    
