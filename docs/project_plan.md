@@ -19,14 +19,14 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 **Goal:** Initialize the project structure and establish communication channels.
 
 ### Story 1.1: Project Initialization
-- [ ] Initialize Flutter Web project.
-- [ ] Initialize Rust project (Cargo workspace).
-- [ ] Set up Git repository and ignore files.
+- [x] Initialize Flutter Web project.
+- [x] Initialize Rust project (Cargo workspace).
+- [x] Set up Git repository and ignore files.
 
 ### Story 1.2: Infrastructure & Database
-- [ ] Set up Firebase/Firestore project and obtain credentials.
-- [ ] Configure Rust Firestore client.
-- [ ] Create a local directory structure for storing extracted images.
+- [x] Set up Firebase/Firestore project and obtain credentials.
+- [x] Configure Rust Firestore client.
+- [x] Create a local directory structure for storing extracted images.
 
 ### Story 1.3: gRPC & Protobuf Definition
 - [x] Define strictly typed `.proto` files for all services (Ingestion, Exam, History).
@@ -34,8 +34,8 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 - [x] Configure `tonic` (Rust) and `grpc` (Dart) code generation.
 
 ### Story 1.4: Refinement & Standards
-- [ ] **Auth:** Support Default Application Credentials (ADC) for Google Cloud auth (via `gcloud auth login`) to avoid managing service account keys locally.
-- [ ] **Documentation:** Create a `docs/design_spec.md` defining project patterns, naming conventions (Rust/Flutter/Proto), and architectural best practices.
+- [x] **Auth:** Support Default Application Credentials (ADC) for Google Cloud auth (via `gcloud auth login`) to avoid managing service account keys locally.
+- [x] **Documentation:** Create a `docs/design_spec.md` defining project patterns, naming conventions (Rust/Flutter/Proto), and architectural best practices.
 
 ---
 
