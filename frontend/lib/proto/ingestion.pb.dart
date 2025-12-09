@@ -112,10 +112,12 @@ class FileMetadata extends $pb.GeneratedMessage {
   factory FileMetadata({
     $core.String? filename,
     $core.String? contentType,
+    $core.String? userPrompt,
   }) {
     final result = create();
     if (filename != null) result.filename = filename;
     if (contentType != null) result.contentType = contentType;
+    if (userPrompt != null) result.userPrompt = userPrompt;
     return result;
   }
 
@@ -135,6 +137,7 @@ class FileMetadata extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'filename')
     ..aOS(2, _omitFieldNames ? '' : 'contentType')
+    ..aOS(3, _omitFieldNames ? '' : 'userPrompt')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -173,6 +176,15 @@ class FileMetadata extends $pb.GeneratedMessage {
   $core.bool hasContentType() => $_has(1);
   @$pb.TagNumber(2)
   void clearContentType() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get userPrompt => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set userPrompt($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasUserPrompt() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearUserPrompt() => $_clearField(3);
 }
 
 class IngestionStatus extends $pb.GeneratedMessage {

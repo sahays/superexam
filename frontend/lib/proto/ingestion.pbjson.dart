@@ -47,13 +47,14 @@ const FileMetadata$json = {
   '2': [
     {'1': 'filename', '3': 1, '4': 1, '5': 9, '10': 'filename'},
     {'1': 'content_type', '3': 2, '4': 1, '5': 9, '10': 'contentType'},
+    {'1': 'user_prompt', '3': 3, '4': 1, '5': 9, '10': 'userPrompt'},
   ],
 };
 
 /// Descriptor for `FileMetadata`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List fileMetadataDescriptor = $convert.base64Decode(
     'CgxGaWxlTWV0YWRhdGESGgoIZmlsZW5hbWUYASABKAlSCGZpbGVuYW1lEiEKDGNvbnRlbnRfdH'
-    'lwZRgCIAEoCVILY29udGVudFR5cGU=');
+    'lwZRgCIAEoCVILY29udGVudFR5cGUSHwoLdXNlcl9wcm9tcHQYAyABKAlSCnVzZXJQcm9tcHQ=');
 
 @$core.Deprecated('Use ingestionStatusDescriptor instead')
 const IngestionStatus$json = {

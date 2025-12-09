@@ -17,6 +17,7 @@ message UploadRequest {
 message FileMetadata {
   string filename = 1;
   string content_type = 2; // e.g., "application/pdf"
+  string user_prompt = 3;
 }
 
 message IngestionStatus {

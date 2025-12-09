@@ -43,18 +43,19 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 **Goal:** Extract questions and images from PDFs using AI and stream results to the user.
 
 ### Story 2.1: File Upload Interface
-- [ ] Create Flutter UI for selecting a PDF file. (No schema upload required).
-- [ ] Implement gRPC client in Flutter to upload the file and listen to the response stream.
+- [x] Create Flutter UI for selecting a PDF file. (No schema upload required).
+- [x] **User Prompt Input:** Add a text input field for the user to provide specific instructions to guide the extraction (e.g., "Only extract multiple-choice questions" or "Translate questions to Spanish").
+- [x] Implement gRPC client in Flutter to upload the file and the **user prompt**, then listen to the response stream.
 
 ### Story 2.2: PDF Parsing & Extraction (Gemini + Rust)
-- [ ] Implement Rust logic to receive PDF upload.
-- [ ] **Integration:** Send PDF content/context to Google Gemini API with a fixed system prompt enforcing a specific JSON structure.
-- [ ] **Image Handling:** Use a Rust PDF library (e.g., `lopdf` or `pdf-extract`) to extract binary image data from the PDF where Gemini identifies an image context.
-- [ ] **Status Updates:** Process Gemini's JSON output in the background and stream status updates to the frontend.
+- [x] Implement Rust logic to receive PDF upload and the `user_prompt`.
+- [x] **Integration:** Construct the final prompt for Gemini by combining the **User Prompt** (context/instruction) with the **System Prompt** (JSON schema enforcement).
+- [x] **Image Handling:** Use a Rust PDF library (e.g., `lopdf` or `pdf-extract`) to extract binary image data from the PDF where Gemini identifies an image context.
+- [x] **Status Updates:** Process Gemini's JSON output in the background and stream status updates to the frontend.
 
 ### Story 2.3: Data Persistence
-- [ ] Save extracted images to local disk and generate accessible URIs.
-- [ ] Batch write the extracted Questions and Answers (as JSON/Documents) to Firestore.
+- [x] Save extracted images to local disk and generate accessible URIs.
+- [x] Batch write the extracted Questions and Answers (as JSON/Documents) to Firestore.
 
 ---
 
