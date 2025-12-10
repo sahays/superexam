@@ -18,15 +18,19 @@ The project is being architected as a **Server-First Next.js Application**.
 *   **AI Engine:** Google Gemini API
 
 ## Directory Structure
-The project is currently defined by its documentation. The code structure (to be implemented) will follow standard Next.js App Router conventions.
+The project is organized as a monorepo-style structure.
 
 ```text
 /home/admin_sanjeetsahay_altostrat_com/superexam/
 ├── docs/                 # Project documentation and specifications
 │   ├── project_plan.md   # Roadmap, Epics, and Stories
 │   └── design_spec.md    # Architecture, Design Tokens, and Coding Standards
-├── .gitignore            # Git ignore rules (includes legacy patterns)
-└── (Planned: app/)       # Future location of Next.js App Router
+├── website/              # Next.js 16 Application
+│   ├── app/              # App Router
+│   ├── components/       # Shadcn UI & Custom Components
+│   ├── lib/              # Business Logic & DB
+│   └── public/           # Static Assets
+└── GEMINI.md             # AI Agent Context
 ```
 
 ## Development Conventions (Planned)
