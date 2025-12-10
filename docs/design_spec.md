@@ -117,9 +117,12 @@ The frontend will be designed as a **SaaS-style Admin Dashboard**, prioritizing 
     - **Shadows:** Deep, soft shadows (Blur Radius: `30px-40px`) to lift elements off the textured background.
 
 ### Layout & Components
-- **Core Layout:** **Admin Dashboard Shell**.
+- **Core Layout:** **Mobile-First Admin Dashboard Shell**.
   - **Structure:** A responsive layout featuring a **Collapsible Sidepanel** for navigation, a top **Navbar** for global actions (search, profile), and a central **Content Area**.
-  - **Content Constraints:** The main content body should be responsive but **max-width restricted to 1280px** on large desktop screens to ensure readability and maintain design integrity.
+  - **Mobile Responsiveness:** The layout starts from mobile (single column, hidden navigation/drawer) and scales up to desktop (visible sidebar, grid layouts).
+  - **Content Constraints:** 
+    - **Mobile:** Content consumes 100% width with safe-area padding.
+    - **Desktop:** The main content body is **max-width restricted to 1280px** to ensure readability.
   - **Inner Layout (Bento Grid):** Inside the content area, data is organized into the strict **Bento Grid** of modular containers. Each "box" is an independent widget (e.g., "Upload Zone", "Recent Exams", "Stats").
   - **Spacing:** Generous gaps (20px+) between modules to let the background "breathe".
 - **Components:**

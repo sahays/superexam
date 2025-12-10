@@ -134,6 +134,8 @@ class _IngestionScreenState extends State<IngestionScreen> with SingleTickerProv
     final textPrimary = isDark ? textPrimaryDark : textPrimaryLight;
     final textSecondary = isDark ? textSecondaryDark : textSecondaryLight;
     final accentColor = isDark ? accentDark : accentLight;
+    
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -143,8 +145,8 @@ class _IngestionScreenState extends State<IngestionScreen> with SingleTickerProv
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              width: 600, // Keep constrained width for the card itself
-              padding: const EdgeInsets.all(40),
+              constraints: const BoxConstraints(maxWidth: 600), // Responsive width
+              padding: EdgeInsets.all(isMobile ? 24 : 40),
               decoration: BoxDecoration(
                 color: isDark ? cardColor.withOpacity(0.65) : cardColor.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(24),

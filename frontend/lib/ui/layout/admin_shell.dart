@@ -18,6 +18,7 @@ class AdminShell extends StatefulWidget {
 }
 
 class _AdminShellState extends State<AdminShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isSidebarCollapsed = false;
 
   void _toggleSidebar() {
@@ -28,7 +29,7 @@ class _AdminShellState extends State<AdminShell> {
 
   @override
   Widget build(BuildContext context) {
-    // Theme Logic (duplicated for now from IngestionScreen, ideally moved to a ThemeProvider)
+    // Theme Logic
     final brightness = MediaQuery.of(context).platformBrightness;
     final isDark = brightness == Brightness.dark;
     
@@ -37,50 +38,65 @@ class _AdminShellState extends State<AdminShell> {
     final borderColor = isDark ? Colors.white.withOpacity(0.12) : Colors.white.withOpacity(0.8);
     final cardColor = isDark ? const Color(0xFF151725) : const Color(0xFFFFFFFF);
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F111A) : const Color(0xFFF0F4F8),
-      body: Stack(
-        children: [
-          // --- BACKGROUND LAYER (Moved from IngestionScreen) ---
-          _buildBackground(isDark),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 900;
 
-          // --- FOREGROUND LAYOUT ---
-          Row(
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: isDark ? const Color(0xFF0F111A) : const Color(0xFFF0F4F8),
+          drawer: isMobile 
+            ? Drawer(
+                width: 280,
+                backgroundColor: Colors.transparent, // We'll handle bg in widget
+                child: _buildSidebar(isDark, cardColor, borderColor, textPrimary, isMobile: true),
+              )
+            : null,
+          body: Stack(
             children: [
-              // 1. SIDEBAR
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: _isSidebarCollapsed ? 80 : 260,
-                curve: Curves.easeInOut,
-                child: _buildSidebar(isDark, cardColor, borderColor, textPrimary),
-              ),
+              // --- BACKGROUND LAYER ---
+              _buildBackground(isDark),
 
-              // 2. MAIN CONTENT AREA
-              Expanded(
-                child: Column(
-                  children: [
-                    // A. NAVBAR
-                    _buildNavbar(isDark, cardColor, borderColor, textPrimary),
+              // --- FOREGROUND LAYOUT ---
+              Row(
+                children: [
+                  // 1. SIDEBAR (Desktop Only)
+                  if (!isMobile)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: _isSidebarCollapsed ? 80 : 260,
+                      curve: Curves.easeInOut,
+                      child: _buildSidebar(isDark, cardColor, borderColor, textPrimary, isMobile: false),
+                    ),
 
-                    // B. CONTENT BODY
-                    Expanded(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1280),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: widget.child,
+                  // 2. MAIN CONTENT AREA
+                  Expanded(
+                    child: Column(
+                      children: [
+                        // A. NAVBAR
+                        _buildNavbar(isDark, cardColor, borderColor, textPrimary, isMobile),
+
+                        // B. CONTENT BODY
+                        Expanded(
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1280),
+                              child: Padding(
+                                padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+                                child: widget.child,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      }
     );
   }
 
@@ -145,13 +161,16 @@ class _AdminShellState extends State<AdminShell> {
     );
   }
 
-  Widget _buildSidebar(bool isDark, Color cardColor, Color borderColor, Color textColor) {
+  Widget _buildSidebar(bool isDark, Color cardColor, Color borderColor, Color textColor, {required bool isMobile}) {
+    // If mobile, force expanded
+    final collapsed = isMobile ? false : _isSidebarCollapsed;
+
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: cardColor.withOpacity(isDark ? 0.4 : 0.4), // More transparent
+            color: cardColor.withOpacity(isDark ? 0.8 : 0.85), // Higher opacity for legibility
             border: Border(right: BorderSide(color: borderColor)),
           ),
           child: Column(
@@ -160,7 +179,7 @@ class _AdminShellState extends State<AdminShell> {
               SizedBox(
                 height: 80,
                 child: Center(
-                  child: _isSidebarCollapsed 
+                  child: collapsed
                     ? const Icon(Icons.bolt_rounded, color: Color(0xFF3B82F6), size: 32)
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -187,34 +206,36 @@ class _AdminShellState extends State<AdminShell> {
                 icon: Icons.cloud_upload_outlined,
                 label: 'Ingestion',
                 isActive: true,
-                isCollapsed: _isSidebarCollapsed,
+                isCollapsed: collapsed,
                 textColor: textColor,
               ),
               _SidebarItem(
                 icon: Icons.library_books_outlined,
                 label: 'Exams',
                 isActive: false,
-                isCollapsed: _isSidebarCollapsed,
+                isCollapsed: collapsed,
                 textColor: textColor,
               ),
               _SidebarItem(
                 icon: Icons.analytics_outlined,
                 label: 'Stats',
                 isActive: false,
-                isCollapsed: _isSidebarCollapsed,
+                isCollapsed: collapsed,
                 textColor: textColor,
               ),
               
               const Spacer(),
-              // Footer / Toggle
-              IconButton(
-                icon: Icon(
-                  _isSidebarCollapsed ? Icons.keyboard_double_arrow_right : Icons.keyboard_double_arrow_left,
-                  color: textColor.withOpacity(0.5),
+              // Footer / Toggle (Only on Desktop)
+              if (!isMobile) ...[
+                IconButton(
+                  icon: Icon(
+                    collapsed ? Icons.keyboard_double_arrow_right : Icons.keyboard_double_arrow_left,
+                    color: textColor.withOpacity(0.5),
+                  ),
+                  onPressed: _toggleSidebar,
                 ),
-                onPressed: _toggleSidebar,
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ]
             ],
           ),
         ),
@@ -222,7 +243,7 @@ class _AdminShellState extends State<AdminShell> {
     );
   }
 
-  Widget _buildNavbar(bool isDark, Color cardColor, Color borderColor, Color textColor) {
+  Widget _buildNavbar(bool isDark, Color cardColor, Color borderColor, Color textColor, bool isMobile) {
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -232,9 +253,18 @@ class _AdminShellState extends State<AdminShell> {
             color: cardColor.withOpacity(isDark ? 0.3 : 0.3),
             border: Border(bottom: BorderSide(color: borderColor)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 32),
           child: Row(
             children: [
+              if (isMobile)
+                IconButton(
+                  icon: Icon(Icons.menu, color: textColor),
+                  onPressed: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                ),
+              if (isMobile) const SizedBox(width: 8),
+
               Text(
                 widget.title,
                 style: GoogleFonts.plusJakartaSans(
@@ -244,28 +274,31 @@ class _AdminShellState extends State<AdminShell> {
                 ),
               ),
               const Spacer(),
-              // Search Bar (Mock)
-              Container(
-                width: 300,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
+              
+              // Search Bar (Hidden on Mobile)
+              if (!isMobile)
+                Container(
+                  width: 300,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.search, size: 20, color: textColor.withOpacity(0.5)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Search exams...',
+                        style: GoogleFonts.inter(color: textColor.withOpacity(0.5)),
+                      ),
+                    ],
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.search, size: 20, color: textColor.withOpacity(0.5)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Search exams...',
-                      style: GoogleFonts.inter(color: textColor.withOpacity(0.5)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 24),
+              
+              SizedBox(width: isMobile ? 16 : 24),
               // Profile
               CircleAvatar(
                 backgroundColor: const Color(0xFF3B82F6),
