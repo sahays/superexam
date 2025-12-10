@@ -1,133 +1,99 @@
-# SuperExam Project Plan
+# SuperExam Project Plan (v2: Next.js Monolith)
 
 ## Overview
-A quiz application allowing users to upload PDFs. The system uses **Google Gemini APIs** to parse the PDF, extracting questions, choices, answers, and images into a fixed JSON format. The extraction happens in the background with the frontend updated with its current status. Users can take exam after the extraction is complete. The scope of exam is the document. Built with Flutter Web, Rust (gRPC), Firestore, and Gemini AI.
-
-**Navigation:** The application features a sidebar navigation with three main sections:
-- **Documents:** Manage uploads, schemas, and processing status.
-- **Exams:** Configure and take exams based on processed documents.
-- **Prompts:** Manage custom prompts (if applicable).
+A web application allowing users to upload PDFs to generate and take interactive exams. The system uses **Google Gemini APIs** to parse content and extract questions.
+This version replaces the previous Flutter/Rust architecture with a **Next.js Monolith**, simplifying deployment and development velocity.
 
 ## Tech Stack
-For detailed architectural patterns (Rust Controller/Service/Repository) and UI design specifications (SaaS Admin Panel), please refer to [docs/design_spec.md](design_spec.md).
-
-- **Frontend:** Flutter Web (SaaS Admin Style)
-- **Backend:** Rust (Layered Architecture)
-- **Communication:** gRPC Web (Protobuf)
-- **Database:** Google Cloud Firestore
-- **File Storage:** Local file system (for images and raw PDFs)
-- **AI:** Google Gemini (for PDF parsing/extraction and answer explanations)
+- **Framework:** [Next.js 14+](https://nextjs.org/) (App Router, Server Actions/API Routes)
+- **Language:** TypeScript
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components:** [Shadcn UI](https://ui.shadcn.com/) (Radix Primitives)
+- **Icons:** [Lucide React](https://lucide.dev/)
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand) (Client state)
+- **Form Management:** [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) (Validation)
+- **Database:** Google Cloud Firestore (via `firebase-admin` on server, `firebase` on client if needed for auth/realtime)
+- **AI:** Google Gemini API (via Google AI Studio SDK)
+- **PDF Processing:** `pdf-parse` or similar Node.js library.
 
 ---
 
-## Epic 1: System Architecture & Setup
-**Goal:** Initialize the project structure and establish communication channels.
+## Epic 1: Foundation & Setup
+**Goal:** Initialize the modern web stack.
 
 ### Story 1.1: Project Initialization
-- [x] Initialize Flutter Web project.
-- [x] Initialize Rust project (Cargo workspace).
-- [x] Set up Git repository and ignore files.
+- [ ] Initialize Next.js project (`npx create-next-app@latest`).
+- [ ] Configure Tailwind CSS.
+- [ ] Initialize Shadcn UI (`npx shadcn-ui@latest init`).
+- [ ] Install core dependencies: `zustand`, `zod`, `react-hook-form`, `lucide-react`, `firebase-admin`, `next-themes`.
 
-### Story 1.2: Infrastructure & Database
-- [x] Set up Firebase/Firestore project and obtain credentials.
-- [x] Configure Rust Firestore client.
-- [x] Create a local directory structure for storing extracted images.
+### Story 1.2: Layout & Navigation
+- [ ] Implement `AppShell` layout (Sidebar + Header + Main Content).
+- [ ] Create Navigation Sidebar with items: **Documents**, **Exams**, **History**.
+- [ ] Implement Dark/Light mode toggle.
 
-### Story 1.3: gRPC & Protobuf Definition
-- [x] Define strictly typed `.proto` files for all services (Ingestion, Exam, History).
-- [x] Implement mapping logic in Rust to convert between Protobuf messages (API layer) and Firestore Documents/JSON (Storage layer).
-- [x] Configure `tonic` (Rust) and `grpc` (Dart) code generation.
-
-### Story 1.4: Refinement & Standards
-- [x] **Auth:** Support Default Application Credentials (ADC) for Google Cloud auth (via `gcloud auth login`) to avoid managing service account keys locally.
-- [x] **Documentation:** Create a `docs/design_spec.md` defining project patterns, naming conventions (Rust/Flutter/Proto), and architectural best practices.
+### Story 1.3: Infrastructure
+- [ ] Configure Firebase Admin SDK (Server-side) for Firestore access.
+- [ ] Configure Environment Variables (`FIREBASE_CREDENTIALS`, `GEMINI_API_KEY`).
 
 ---
 
-## Epic 2: Data Ingestion & Document Management
-**Goal:** robust document handling workflow including upload, schema management, and asynchronous background processing.
+## Epic 2: Document Ingestion (The "Backend" Logic)
+**Goal:** Port the extraction pipeline to Node.js/Next.js Server Actions.
 
-### Story 2.1: Navigation & Documents Dashboard
-- [x] **Sidebar:** Implement a global sidebar with navigation items: **Documents**, **Exams**, **Prompts**.
-- [x] **Documents Tab:** Create a view to list all uploaded documents and available schemas.
-- [x] **Status Indicators:** Display the current status of each document (e.g., Uploaded, Processing, Succeeded, Failed) in the list view.
+### Story 2.1: Document Management UI
+- [ ] Create `/documents` page.
+- [ ] Implement "Upload Document" Dialog (File dropzone).
+- [ ] List existing documents (Cards with Status: Uploaded, Processing, Ready, Failed).
+- [ ] Implement Delete action.
 
-### Story 2.2: Document Upload (Storage Phase)
-- [x] **File Upload:** Implement UI/API to upload a PDF file.
-- [x] **Storage:** Save the raw file to local storage.
-- [x] **Database Record:** Create an initial record in Firestore with status `Uploaded` and file metadata (name, upload date, path).
+### Story 2.2: Ingestion Pipeline (Server Actions)
+- [ ] Implement file upload handler (save to local `/tmp` or keep in memory buffer).
+- [ ] Implement PDF Text Extraction service (using `pdf-parse`).
+- [ ] Implement Gemini Extraction service (Prompt engineering to output JSON).
+- [ ] Save Questions/Answers to Firestore.
+- [ ] Update Document Status in Firestore.
 
-### Story 2.3: Schema Management
-- [ ] **Schema Upload:** Allow users to upload or define JSON schemas that dictate how Gemini should extract data.
-- [ ] **Visibility:** Ensure schemas are visible and selectable within the Documents tab.
-
-### Story 2.4: Asynchronous Processing (Extraction Phase)
-- [x] **Trigger Processing:** User selects an `Uploaded` document and a Schema, then clicks "Process".
-- [x] **Long-Running Task:** Backend initiates a background task for Gemini extraction.
-- [x] **State Persistence:** Create/Update a task record in Firestore to track the processing job.
-- [x] **Status Updates:** The background task updates the database record to `Processing`, and finally `Succeeded` or `Failed` upon completion.
-
-### Story 2.5: Real-time Feedback & Persistence
-- [x] **Monitoring:** Frontend polls or listens (server push/stream) for status changes on the Document records.
-- [x] **Persistence:** Users can navigate away from the page and return to see the updated status (no session-only state).
-- [x] **Completion:** Once `Succeeded`, the extracted data (questions, images) is linked to the document and available for exams.
+### Story 2.3: Processing Feedback
+- [ ] Implement polling or real-time listeners (Firestore `onSnapshot`) to show processing progress in UI.
+- [ ] Handle errors and display toast notifications (Shadcn Toast).
 
 ---
 
-## Epic 3: Exam Management
-**Goal:** Allow users to configure and generate new exam sessions.
+## Epic 3: Exam Module
+**Goal:** Interactive quiz interface.
 
 ### Story 3.1: Exam Configuration
-- [ ] Create API to query total available questions in Firestore.
-- [ ] Create Flutter UI to select number of questions and time limit per question (60-300s).
+- [ ] UI to select a Document source.
+- [ ] UI to configure exam settings (Number of questions, Timer).
 
-### Story 3.2: Exam Generation
-- [ ] Implement logic to randomly select $N$ questions from Firestore.
-- [ ] Implement logic to randomize choice order for each question.
-- [ ] Create an "Exam Session" record in Firestore to track progress.
+### Story 3.2: Exam Interface
+- [ ] Create Quiz UI (Question Card, Multiple Choice/Single Choice).
+- [ ] Implement Timer functionality.
+- [ ] State management (Zustand) for current exam session (answers, navigation).
 
----
-
-## Epic 4: Exam Execution
-**Goal:** Provide the core testing interface for users.
-
-### Story 4.1: Quiz Interface
-- [ ] Specific UI for displaying Question text and **extracted Images**.
-- [ ] Implement Single Choice (Radio) and Multiple Choice (Checkbox) widgets.
-- [ ] Implement Countdown Timer (per question or global exam time).
-
-### Story 4.2: Interaction & Navigation
-- [ ] Handle answer selection state.
-- [ ] Implement "End Exam" functionality to submit early.
-- [ ] Auto-submit/advance logic when timer expires.
-
-### Story 4.3: Scoring & Results
+### Story 3.3: Submission & Scoring
 - [ ] Calculate score upon submission.
-- [ ] Display Result Screen with score, correct/incorrect breakdown.
+- [ ] Display Results Page (Score, Breakdown).
+- [ ] Save Exam Result to Firestore (`history` collection).
 
 ---
 
-## Epic 5: History & Analytics
-**Goal:** Allow users to track progress and review past performance.
+## Epic 4: History & Analytics
+**Goal:** Review past performance.
 
-### Story 5.1: Exam History
-- [ ] Create API to fetch list of completed exams for the user.
-- [ ] Create Flutter UI to display history list (Date, Score, Time taken).
+### Story 4.1: History Dashboard
+- [ ] List past exam sessions.
+- [ ] Show key metrics (Average score, Total exams taken).
 
-### Story 5.2: Review & Retake
-- [ ] Allow viewing details of a past exam (User answers vs Correct answers).
-- [ ] Implement "Retake" button to generate a new exam with the same settings/questions.
+### Story 4.2: Exam Review
+- [ ] Detailed view of a past exam.
+- [ ] "Explain this Answer" feature using Gemini (Streamed response).
 
 ---
 
-## Epic 6: AI Assistance (Gemini)
-**Goal:** Provide context-aware explanations for questions.
-
-### Story 6.1: Explanation Interface
-- [ ] Add "Explain this" button to the Result/Review screen. Implement **response streaming** to display the explanation text as it generates.
-- [ ] Show hidden explanation text if already available (retrieve saved response).
-
-### Story 6.2: Gemini Integration
-- [ ] Integrate Gemini API in Rust backend to **stream** the explanation to the frontend.
-- [ ] Specific prompt engineering: Input question + choices + correct answer; Output: Explanation of concepts and why the answer is correct.
-- [ ] Logic to accumulate the streamed response and **save** it with the question document in Firestore.
+## Architecture Notes
+- **Monolith:** All API logic lives in `app/api` or Server Actions. No separate Rust backend.
+- **Server Actions:** Preferred for form submissions and mutations.
+- **Client Components:** Used for interactive UI (Quiz, Dashboard charts).
+- **Storage:** PDFs can be stored in Firestore (Base64) for small files or just transiently processed. *Decision: Transient processing first (upload -> parse -> save text/questions -> discard PDF) to simplify storage needs.*
