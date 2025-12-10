@@ -117,8 +117,10 @@ The frontend will be designed as a **SaaS-style Admin Dashboard**, prioritizing 
     - **Shadows:** Deep, soft shadows (Blur Radius: `30px-40px`) to lift elements off the textured background.
 
 ### Layout & Components
-- **Core Layout:** **Bento Grid**.
-  - The screen is divided into a strict grid of modular containers. Each "box" is an independent widget (e.g., "Upload Zone", "Recent Exams", "Stats").
+- **Core Layout:** **Admin Dashboard Shell**.
+  - **Structure:** A responsive layout featuring a **Collapsible Sidepanel** for navigation, a top **Navbar** for global actions (search, profile), and a central **Content Area**.
+  - **Content Constraints:** The main content body should be responsive but **max-width restricted to 1280px** on large desktop screens to ensure readability and maintain design integrity.
+  - **Inner Layout (Bento Grid):** Inside the content area, data is organized into the strict **Bento Grid** of modular containers. Each "box" is an independent widget (e.g., "Upload Zone", "Recent Exams", "Stats").
   - **Spacing:** Generous gaps (20px+) between modules to let the background "breathe".
 - **Components:**
   - **Modules (Cards):** heavily rounded corners (`border-radius: 24px`).
@@ -126,19 +128,9 @@ The frontend will be designed as a **SaaS-style Admin Dashboard**, prioritizing 
   - **Data Visualization:**
     - Charts should use **Gradient Fills** that fade to transparent.
     - Lines should be thick and smooth (Bezier curves).
-  - **Navigation:** Floating dock or segmented sidebar that adheres to the glass aesthetic.
-
-### Layout & Components
-- **Core Layout:** **Bento Grid**.
-  - The screen is divided into a strict grid of modular containers. Each "box" is an independent widget (e.g., "Upload Zone", "Recent Exams", "Stats").
-  - **Spacing:** Generous gaps (20px+) between modules to let the background "breathe".
-- **Components:**
-  - **Modules (Cards):** heavily rounded corners (`border-radius: 24px`).
-  - **Glow Effects:** Use gradients to simulate "light sources" highlighting active areas (e.g., a blue glow pulsing behind the file upload drop zone).
-  - **Data Visualization:**
-    - Charts should use **Gradient Fills** that fade to transparent.
-    - Lines should be thick and smooth (Bezier curves).
-  - **Navigation:** Floating dock or segmented sidebar that adheres to the glass aesthetic.
+  - **Navigation:**
+    - **Sidepanel:** Collapsible, glassmorphism-styled sidebar.
+    - **Navbar:** Minimalist top bar adhering to the glass aesthetic.
 
 ### Best Practices
 - **Naming:**
