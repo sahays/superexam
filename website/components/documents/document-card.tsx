@@ -4,11 +4,12 @@ import { Document } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Play, Trash2, FileText, Loader2, AlertCircle } from "lucide-react"
+import { Play, Trash2, FileText, Loader2, AlertCircle, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { deleteDocument } from "@/app/actions/documents"
 import { toast } from "sonner"
 import { useTransition } from "react"
+import { ProcessDocumentDialog } from "./process-dialog"
 
 interface DocumentCardProps {
   doc: Document
@@ -34,6 +35,7 @@ export function DocumentCard({ doc }: DocumentCardProps) {
     switch (status) {
       case 'ready': return 'bg-green-500/15 text-green-600 hover:bg-green-500/25 dark:text-green-400'
       case 'processing': return 'bg-blue-500/15 text-blue-600 hover:bg-blue-500/25 dark:text-blue-400'
+      case 'uploaded': return 'bg-yellow-500/15 text-yellow-600 hover:bg-yellow-500/25 dark:text-yellow-400'
       case 'failed': return 'bg-red-500/15 text-red-600 hover:bg-red-500/25 dark:text-red-400'
       default: return 'bg-gray-500/15 text-gray-600 hover:bg-gray-500/25 dark:text-gray-400'
     }
@@ -70,6 +72,11 @@ export function DocumentCard({ doc }: DocumentCardProps) {
               <AlertCircle className="h-3 w-3" />
               {doc.error || 'Processing failed'}
             </span>
+          ) : doc.status === 'uploaded' ? (
+             <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+                <Clock className="h-3 w-3" />
+                Waiting for processing
+             </span>
           ) : (
              <span>Analyzing content...</span>
           )}
@@ -77,13 +84,18 @@ export function DocumentCard({ doc }: DocumentCardProps) {
       </CardContent>
 
       <CardFooter className="pt-3 border-t bg-muted/20 gap-2">
-        <Button 
-          className="w-full" 
-          disabled={doc.status !== 'ready'}
-        >
-          <Play className="mr-2 h-4 w-4" />
-          Take Exam
-        </Button>
+        {doc.status === 'uploaded' ? (
+            <ProcessDocumentDialog docId={doc.id} docTitle={doc.title} />
+        ) : (
+            <Button 
+            className="w-full" 
+            disabled={doc.status !== 'ready'}
+            >
+            <Play className="mr-2 h-4 w-4" />
+            Take Exam
+            </Button>
+        )}
+        
         <Button
           variant="ghost"
           size="icon"

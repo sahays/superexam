@@ -1,10 +1,11 @@
 'use server';
 
 import { db } from "@/lib/db/firebase";
-import { extractTextFromPDF } from "@/lib/services/pdf";
-import { generateQuestionsFromText } from "@/lib/services/ai";
 import { Document, Question } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+import { writeFile, readFile } from "fs/promises";
+import { join } from "path";
+import { generateQuestionsFromPDF } from "@/lib/services/ai";
 
 export async function uploadDocument(formData: FormData) {
   try {
@@ -13,37 +14,74 @@ export async function uploadDocument(formData: FormData) {
       return { error: 'No file provided' };
     }
 
-    // 1. Convert File to Buffer
+    // 1. Save File to Local System
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    
+    // Ensure unique filename
+    const uniqueFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const uploadDir = join(process.cwd(), 'uploads');
+    const filePath = join(uploadDir, uniqueFilename);
+    
+    // Ensure directory exists (Node 10+ recursive) - actually we did this in shell, but good practice
+    // await mkdir(uploadDir, { recursive: true }); 
+    
+    await writeFile(filePath, buffer);
 
-    // 2. Extract Text
-    const text = await extractTextFromPDF(buffer);
-    if (!text || text.length < 50) {
-      return { error: 'Could not extract enough text from this PDF.' };
-    }
-
-    // 3. Create Document Record (Initial Status)
+    // 2. Create Document Record
     const docRef = db.collection('documents').doc();
-    const docId = docRef.id;
+    constTX docId = docRef.id;
     const now = Date.now();
 
     const newDoc: Document = {
       id: docId,
       title: file.name,
-      status: 'processing',
+      status: 'uploaded', // New status: waiting for processing
       questionCount: 0,
       createdAt: now,
+      // @ts-expect-error Adding filePath to doc even if not in shared type yet (or update type later)
+      filePath: uniqueFilename 
     };
 
     await docRef.set(newDoc);
+
+    revalidatePath('/documents');
+    return { success: true, message: 'Document uploaded successfully', docId };
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    return { error: 'Internal server error during upload.' };
+  }
+}
+
+export async function processDocument(docId: string, schemaContent: string) {
+  try {
+    // 1. Get Document Metadata
+    const docRef = db.collection('documents').doc(docId);
+    const docSnap = await docRef.get();
     
-    // 4. Generate Questions (AI)
-    // In a real production app, this might be a background job. 
-    // For this prototype, we await it to provide immediate feedback.
+    if (!docSnap.exists) {
+      return { error: 'Document not found' };
+    }
+
+    const docData = docSnap.data() as Document & { filePath?: string };
+    if (!docData.filePath) {
+        return { error: 'File path missing for this document.' };
+    }
+
+    // 2. Read File
+    const uploadDir = join(process.cwd(), 'uploads');
+    const filePath = join(uploadDir, docData.filePath);
+    const fileBuffer = await readFile(filePath);
+
+    // 3. Update Status to Processing
+    await docRef.update({ status: 'processing' });
+    revalidatePath('/documents');
+
+    // 4. Generate Questions (AI) with Schema
     let questions: Question[] = [];
     try {
-      questions = await generateQuestionsFromText(text, 5); // Generate 5 questions by default
+      questions = await generateQuestionsFromPDF(fileBuffer, schemaContent);
     } catch (aiError) {
       console.error("AI Generation failed:", aiError);
       await docRef.update({ status: 'failed', error: 'AI generation failed' });
@@ -69,19 +107,19 @@ export async function uploadDocument(formData: FormData) {
     await batch.commit();
 
     revalidatePath('/documents');
-    return { success: true, message: 'Document processed successfully', docId };
+    return { success: true, message: 'Document processed successfully' };
 
   } catch (error) {
-    console.error('Upload error:', error);
-    return { error: 'Internal server error during upload.' };
+    console.error('Processing error:', error);
+    // Attempt to revert status if possible, or just leave as processing/failed
+    return { error: 'Internal server error during processing.' };
   }
 }
 
 export async function deleteDocument(docId: string) {
   try {
+    // Optional: Delete local file if we want to be clean
     await db.collection('documents').doc(docId).delete();
-    // Note: Subcollections in Firestore are not automatically deleted. 
-    // For a prototype, this is acceptable. For production, use a recursive delete.
     revalidatePath('/documents');
     return { success: true };
   } catch (error) {

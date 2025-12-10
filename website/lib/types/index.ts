@@ -11,11 +11,10 @@ export type DocumentStatus = 'uploading' | 'processing' | 'ready' | 'failed';
 export interface Document {
   id: string;
   title: string;
-  content?: string; // Optional: raw text content (might be large, so maybe don't fetch by default)
-  status: DocumentStatus;
+  status: 'uploaded' | 'processing' | 'ready' | 'failed';
   questionCount: number;
-  createdAt: number; // Timestamp
-  error?: string; // Error message if status is 'failed'
+  createdAt: number;
+  error?: string;
 }
 
 export interface Exam {

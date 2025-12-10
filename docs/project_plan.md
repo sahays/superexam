@@ -38,21 +38,35 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 
 ---
 
-## Epic 2: Document Ingestion (The "Backend" Logic)
-**Goal:** Port the extraction pipeline to Node.js/Next.js Server Actions.
+## Epic 2: Document Ingestion (Refined Workflow)
+**Goal:** Separate upload and processing steps, allowing users to define the output schema.
 
 ### Story 2.1: Document Management UI
 - [x] Create `/documents` page.
 - [x] Implement "Upload Document" Dialog (File dropzone).
-- [x] List existing documents (Cards with Status: Uploaded, Processing, Ready, Failed).
+- [x] List existing documents.
 - [x] Implement Delete action.
+- [ ] **UI Update:** Update Document Card to show "Not Processed" state (Status: `uploaded`).
+- [ ] **UI Update:** Add "Process" button to Document Card (opens Schema Dialog).
 
-### Story 2.2: Ingestion Pipeline (Server Actions)
-- [x] Implement file upload handler (save to local `/tmp` or keep in memory buffer).
-- [x] Implement PDF Text Extraction service (using `pdf-parse`).
-- [x] Implement Gemini Extraction service (Prompt engineering to output JSON).
-- [x] Save Questions/Answers to Firestore.
-- [x] Update Document Status in Firestore.
+### Story 2.2: Upload Pipeline (File Storage)
+- [x] Implement file upload handler.
+- [ ] **Refactor:** Store PDF file persistently (Local filesystem for prototype) instead of transient processing.
+- [ ] **Refactor:** Save Document Metadata to Firestore (Status: `uploaded`).
+- [ ] **Refactor:** Remove automatic text extraction and AI generation from this step.
+
+### Story 2.4: Manual Processing with Schema
+- [ ] Implement "Process Document" Dialog:
+    -   Allows user to upload a JSON Schema file.
+- [ ] Update `ai.ts` service:
+    -   Switch to Multimodal input (Send PDF binary + Schema to Gemini).
+    -   Remove `pdf-parse` dependency.
+- [ ] Implement `processDocument` Server Action:
+    -   Reads stored PDF.
+    -   Reads uploaded Schema.
+    -   Calls Gemini.
+    -   Saves results to Firestore.
+    -   Updates status to `ready`.
 
 ### Story 2.3: Processing Feedback
 - [x] Implement synchronous processing feedback (Loading states in Dialog).

@@ -10,6 +10,7 @@ if (!GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
 export async function generateQuestionsFromText(text: string, count: number = 10): Promise<Question[]> {
+  // Legacy text function - kept for reference or fallback
   if (!GEMINI_API_KEY) {
     throw new Error("Gemini API Key is missing");
   }
@@ -31,20 +32,16 @@ export async function generateQuestionsFromText(text: string, count: number = 10
     }
 
     Text content to analyze:
-    ${text.substring(0, 30000)} // Truncate to avoid token limits if necessary, though 1.5 Flash has a large window
+    ${text.substring(0, 30000)}
   `;
 
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const textResponse = response.text();
-
-    // Clean up potential markdown code blocks if the model adds them despite instructions
     const jsonString = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-
     const questions: Omit<Question, 'id'>[] = JSON.parse(jsonString);
 
-    // Add IDs to the questions
     return questions.map((q, index) => ({
       ...q,
       id: `q-${Date.now()}-${index}`
@@ -53,5 +50,51 @@ export async function generateQuestionsFromText(text: string, count: number = 10
   } catch (error) {
     console.error("Error generating questions with Gemini:", error);
     throw new Error("Failed to generate questions from text");
+  }
+}
+
+export async function generateQuestionsFromPDF(pdfBuffer: Buffer, schema: string): Promise<Question[]> {
+  if (!GEMINI_API_KEY) {
+    throw new Error("Gemini API Key is missing");
+  }
+
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = `
+    You are an expert exam generator.
+    Analyze the provided PDF document and generate multiple-choice questions based on the following JSON Schema.
+    
+    Adhere STRICTLY to this schema for the output. Return ONLY a valid JSON array matching the schema structure.
+    
+    Schema:
+    ${schema}
+
+    Ensure the output is a raw JSON array (no markdown code blocks).
+  `;
+
+  const pdfPart = {
+    inlineData: {
+      data: pdfBuffer.toString("base64"),
+      mimeType: "application/pdf",
+    },
+  };
+
+  try {
+    const result = await model.generateContent([prompt, pdfPart]);
+    const response = await result.response;
+    const textResponse = response.text();
+
+    const jsonString = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+    const questions: Omit<Question, 'id'>[] = JSON.parse(jsonString);
+
+    // Validate/Ensure ID exists if schema didn't force it
+    return questions.map((q, index) => ({
+      ...q,
+      id: q.id || `q-${Date.now()}-${index}`
+    }));
+
+  } catch (error) {
+    console.error("Error generating questions with Gemini from PDF:", error);
+    throw new Error("Failed to generate questions from PDF");
   }
 }
