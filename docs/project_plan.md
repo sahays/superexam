@@ -22,19 +22,19 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 **Goal:** Initialize the modern web stack.
 
 ### Story 1.1: Project Initialization
-- [ ] Initialize Next.js project (`npx create-next-app@latest`).
-- [ ] Configure Tailwind CSS.
-- [ ] Initialize Shadcn UI (`npx shadcn-ui@latest init`).
-- [ ] Install core dependencies: `zustand`, `zod`, `react-hook-form`, `lucide-react`, `firebase-admin`, `next-themes`.
+- [x] Initialize Next.js project (`npx create-next-app@latest`).
+- [x] Configure Tailwind CSS.
+- [x] Initialize Shadcn UI (`npx shadcn-ui@latest init`).
+- [x] Install core dependencies: `zustand`, `zod`, `react-hook-form`, `lucide-react`, `firebase-admin`, `next-themes`.
 
 ### Story 1.2: Layout & Navigation
-- [ ] Implement `AppShell` layout (Sidebar + Header + Main Content).
-- [ ] Create Navigation Sidebar with items: **Documents**, **Exams**, **History**.
-- [ ] Implement Dark/Light mode toggle.
+- [x] Implement `AppShell` layout (Sidebar + Header + Main Content).
+- [x] Create Navigation Sidebar with items: **Documents**, **Exams**, **History**.
+- [x] Implement Dark/Light mode toggle.
 
 ### Story 1.3: Infrastructure
-- [ ] Configure Firebase Admin SDK (Server-side) for Firestore access.
-- [ ] Configure Environment Variables (`FIREBASE_CREDENTIALS`, `GEMINI_API_KEY`).
+- [x] Configure Firebase Admin SDK (Server-side) for Firestore access.
+- [x] Configure Environment Variables (`FIREBASE_CREDENTIALS`, `GEMINI_API_KEY`).
 
 ---
 
@@ -42,21 +42,21 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 **Goal:** Port the extraction pipeline to Node.js/Next.js Server Actions.
 
 ### Story 2.1: Document Management UI
-- [ ] Create `/documents` page.
-- [ ] Implement "Upload Document" Dialog (File dropzone).
-- [ ] List existing documents (Cards with Status: Uploaded, Processing, Ready, Failed).
-- [ ] Implement Delete action.
+- [x] Create `/documents` page.
+- [x] Implement "Upload Document" Dialog (File dropzone).
+- [x] List existing documents (Cards with Status: Uploaded, Processing, Ready, Failed).
+- [x] Implement Delete action.
 
 ### Story 2.2: Ingestion Pipeline (Server Actions)
-- [ ] Implement file upload handler (save to local `/tmp` or keep in memory buffer).
-- [ ] Implement PDF Text Extraction service (using `pdf-parse`).
-- [ ] Implement Gemini Extraction service (Prompt engineering to output JSON).
-- [ ] Save Questions/Answers to Firestore.
-- [ ] Update Document Status in Firestore.
+- [x] Implement file upload handler (save to local `/tmp` or keep in memory buffer).
+- [x] Implement PDF Text Extraction service (using `pdf-parse`).
+- [x] Implement Gemini Extraction service (Prompt engineering to output JSON).
+- [x] Save Questions/Answers to Firestore.
+- [x] Update Document Status in Firestore.
 
 ### Story 2.3: Processing Feedback
-- [ ] Implement polling or real-time listeners (Firestore `onSnapshot`) to show processing progress in UI.
-- [ ] Handle errors and display toast notifications (Shadcn Toast).
+- [x] Implement synchronous processing feedback (Loading states in Dialog).
+- [x] Handle errors and display toast notifications (Shadcn Toast).
 
 ---
 
