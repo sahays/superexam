@@ -5,7 +5,7 @@ A web application allowing users to upload PDFs to generate and take interactive
 This version replaces the previous Flutter/Rust architecture with a **Next.js Monolith**, simplifying deployment and development velocity.
 
 ## Tech Stack
-- **Framework:** [Next.js 14+](https://nextjs.org/) (App Router, Server Actions/API Routes)
+- **Framework:** [Next.js 16+](https://nextjs.org/) (App Router, Server Actions/API Routes)
 - **Language:** TypeScript
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components:** [Shadcn UI](https://ui.shadcn.com/) (Radix Primitives)
