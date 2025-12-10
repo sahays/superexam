@@ -64,6 +64,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         // We iterate the stream but for upload it just returns status.
         // We only care when it completes.
         await for (var status in _ingestionService.uploadPdf(file.name, file.bytes!, "")) {
+           if (status.state == IngestionStatus_State.FAILED) {
+             throw Exception(status.message);
+           }
            if (status.state == IngestionStatus_State.QUEUED || status.state == IngestionStatus_State.COMPLETED) {
              // Upload done (backend returns Queued/Completed for upload phase now)
            }

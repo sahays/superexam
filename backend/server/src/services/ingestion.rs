@@ -34,6 +34,7 @@ impl IngestionService for IngestionServiceImpl {
         &self,
         request: Request<UploadRequest>,
     ) -> Result<Response<Self::UploadPdfStream>, Status> {
+        println!("Received Upload Request");
         let req = request.into_inner();
         let (tx, rx) = mpsc::channel(4);
         let db = self.db.clone();
@@ -46,9 +47,12 @@ impl IngestionService for IngestionServiceImpl {
             let user_prompt = metadata.user_prompt;
             let filename = metadata.filename;
 
+            println!("Processing upload for: {} (ID: {})", filename, doc_id);
+
             // 1. Save File to Disk
             let upload_dir = "storage/uploads";
             if let Err(e) = tokio::fs::create_dir_all(upload_dir).await {
+                println!("Error creating directory: {}", e);
                 let _ = tx.send(Ok(IngestionStatus {
                     state: ingestion_status::State::Failed as i32,
                     message: format!("Failed to create storage directory: {}", e),
@@ -60,6 +64,7 @@ impl IngestionService for IngestionServiceImpl {
 
             let file_path = format!("{}/{}_{}.pdf", upload_dir, doc_id, filename);
             if let Err(e) = tokio::fs::write(&file_path, &file_data).await {
+                println!("Error writing file: {}", e);
                 let _ = tx.send(Ok(IngestionStatus {
                     state: ingestion_status::State::Failed as i32,
                     message: format!("Failed to save file: {}", e),
@@ -68,6 +73,7 @@ impl IngestionService for IngestionServiceImpl {
                 })).await;
                 return;
             }
+            println!("File saved to: {}", file_path);
 
             // 2. Create Initial DB Record
             let firestore_doc = FirestoreDocument {
@@ -86,6 +92,7 @@ impl IngestionService for IngestionServiceImpl {
                 .execute::<()>()
                 .await
             {
+                println!("Error writing to Firestore: {}", e);
                 let _ = tx.send(Ok(IngestionStatus {
                     state: ingestion_status::State::Failed as i32,
                     message: format!("Failed to create DB record: {}", e),
@@ -94,6 +101,7 @@ impl IngestionService for IngestionServiceImpl {
                 })).await;
                 return;
             }
+            println!("DB record created successfully.");
 
             // Notify Client: Uploaded and Ready
             let _ = tx.send(Ok(IngestionStatus {
@@ -117,6 +125,7 @@ impl IngestionService for IngestionServiceImpl {
     ) -> Result<Response<Self::ProcessDocumentStream>, Status> {
         let req = request.into_inner();
         let doc_id = req.document_id;
+        // ... (rest of process_document)
         let prompt_override = req.prompt_override;
         
         let (tx, rx) = mpsc::channel(4);
@@ -175,6 +184,7 @@ impl IngestionService for IngestionServiceImpl {
         &self,
         _request: Request<ListDocumentsRequest>,
     ) -> Result<Response<ListDocumentsResponse>, Status> {
+        println!("Received ListDocuments Request");
         let documents_stream = self
             .db
             .fluent()
@@ -183,9 +193,13 @@ impl IngestionService for IngestionServiceImpl {
             .obj::<FirestoreDocument>()
             .stream_query()
             .await
-            .map_err(|e| Status::internal(format!("Database error: {}", e)))?;
+            .map_err(|e| {
+                println!("Error creating stream: {}", e);
+                Status::internal(format!("Database error: {}", e))
+            })?;
 
         let documents: Vec<FirestoreDocument> = documents_stream.collect().await;
+        println!("Found {} documents", documents.len());
 
         let proto_documents = documents
             .into_iter()
