@@ -3,6 +3,11 @@
 ## Overview
 A quiz application allowing users to upload PDFs. The system uses **Google Gemini APIs** to parse the PDF, extracting questions, choices, answers, and images into a fixed JSON format. The extraction happens in the background with the frontend updated with its current status. Users can take exam after the extraction is complete. The scope of exam is the document. Built with Flutter Web, Rust (gRPC), Firestore, and Gemini AI.
 
+**Navigation:** The application features a sidebar navigation with three main sections:
+- **Documents:** Manage uploads, schemas, and processing status.
+- **Exams:** Configure and take exams based on processed documents.
+- **Prompts:** Manage custom prompts (if applicable).
+
 ## Tech Stack
 For detailed architectural patterns (Rust Controller/Service/Repository) and UI design specifications (SaaS Admin Panel), please refer to [docs/design_spec.md](design_spec.md).
 
@@ -10,7 +15,7 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 - **Backend:** Rust (Layered Architecture)
 - **Communication:** gRPC Web (Protobuf)
 - **Database:** Google Cloud Firestore
-- **File Storage:** Local file system (for images)
+- **File Storage:** Local file system (for images and raw PDFs)
 - **AI:** Google Gemini (for PDF parsing/extraction and answer explanations)
 
 ---
@@ -39,23 +44,33 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 
 ---
 
-## Epic 2: Data Ingestion (Gemini-Powered)
-**Goal:** Extract questions and images from PDFs using AI and stream results to the user.
+## Epic 2: Data Ingestion & Document Management
+**Goal:** robust document handling workflow including upload, schema management, and asynchronous background processing.
 
-### Story 2.1: File Upload Interface
-- [x] Create Flutter UI for selecting a PDF file. (No schema upload required).
-- [x] **User Prompt Input:** Add a text input field for the user to provide specific instructions to guide the extraction (e.g., "Only extract multiple-choice questions" or "Translate questions to Spanish").
-- [x] Implement gRPC client in Flutter to upload the file and the **user prompt**, then listen to the response stream.
+### Story 2.1: Navigation & Documents Dashboard
+- [ ] **Sidebar:** Implement a global sidebar with navigation items: **Documents**, **Exams**, **Prompts**.
+- [ ] **Documents Tab:** Create a view to list all uploaded documents and available schemas.
+- [ ] **Status Indicators:** Display the current status of each document (e.g., Uploaded, Processing, Succeeded, Failed) in the list view.
 
-### Story 2.2: PDF Parsing & Extraction (Gemini + Rust)
-- [x] Implement Rust logic to receive PDF upload and the `user_prompt`.
-- [x] **Integration:** Construct the final prompt for Gemini by combining the **User Prompt** (context/instruction) with the **System Prompt** (JSON schema enforcement).
-- [x] **Image Handling:** Use a Rust PDF library (e.g., `lopdf` or `pdf-extract`) to extract binary image data from the PDF where Gemini identifies an image context.
-- [x] **Status Updates:** Process Gemini's JSON output in the background and stream status updates to the frontend.
+### Story 2.2: Document Upload (Storage Phase)
+- [ ] **File Upload:** Implement UI/API to upload a PDF file.
+- [ ] **Storage:** Save the raw file to local storage.
+- [ ] **Database Record:** Create an initial record in Firestore with status `Uploaded` and file metadata (name, upload date, path).
 
-### Story 2.3: Data Persistence
-- [x] Save extracted images to local disk and generate accessible URIs.
-- [x] Batch write the extracted Questions and Answers (as JSON/Documents) to Firestore.
+### Story 2.3: Schema Management
+- [ ] **Schema Upload:** Allow users to upload or define JSON schemas that dictate how Gemini should extract data.
+- [ ] **Visibility:** Ensure schemas are visible and selectable within the Documents tab.
+
+### Story 2.4: Asynchronous Processing (Extraction Phase)
+- [ ] **Trigger Processing:** User selects an `Uploaded` document and a Schema, then clicks "Process".
+- [ ] **Long-Running Task:** Backend initiates a background task for Gemini extraction.
+- [ ] **State Persistence:** Create/Update a task record in Firestore to track the processing job.
+- [ ] **Status Updates:** The background task updates the database record to `Processing`, and finally `Succeeded` or `Failed` upon completion.
+
+### Story 2.5: Real-time Feedback & Persistence
+- [ ] **Monitoring:** Frontend polls or listens (server push/stream) for status changes on the Document records.
+- [ ] **Persistence:** Users can navigate away from the page and return to see the updated status (no session-only state).
+- [ ] **Completion:** Once `Succeeded`, the extracted data (questions, images) is linked to the document and available for exams.
 
 ---
 
