@@ -48,29 +48,29 @@ For detailed architectural patterns (Rust Controller/Service/Repository) and UI 
 **Goal:** robust document handling workflow including upload, schema management, and asynchronous background processing.
 
 ### Story 2.1: Navigation & Documents Dashboard
-- [ ] **Sidebar:** Implement a global sidebar with navigation items: **Documents**, **Exams**, **Prompts**.
-- [ ] **Documents Tab:** Create a view to list all uploaded documents and available schemas.
-- [ ] **Status Indicators:** Display the current status of each document (e.g., Uploaded, Processing, Succeeded, Failed) in the list view.
+- [x] **Sidebar:** Implement a global sidebar with navigation items: **Documents**, **Exams**, **Prompts**.
+- [x] **Documents Tab:** Create a view to list all uploaded documents and available schemas.
+- [x] **Status Indicators:** Display the current status of each document (e.g., Uploaded, Processing, Succeeded, Failed) in the list view.
 
 ### Story 2.2: Document Upload (Storage Phase)
-- [ ] **File Upload:** Implement UI/API to upload a PDF file.
-- [ ] **Storage:** Save the raw file to local storage.
-- [ ] **Database Record:** Create an initial record in Firestore with status `Uploaded` and file metadata (name, upload date, path).
+- [x] **File Upload:** Implement UI/API to upload a PDF file.
+- [x] **Storage:** Save the raw file to local storage.
+- [x] **Database Record:** Create an initial record in Firestore with status `Uploaded` and file metadata (name, upload date, path).
 
 ### Story 2.3: Schema Management
 - [ ] **Schema Upload:** Allow users to upload or define JSON schemas that dictate how Gemini should extract data.
 - [ ] **Visibility:** Ensure schemas are visible and selectable within the Documents tab.
 
 ### Story 2.4: Asynchronous Processing (Extraction Phase)
-- [ ] **Trigger Processing:** User selects an `Uploaded` document and a Schema, then clicks "Process".
-- [ ] **Long-Running Task:** Backend initiates a background task for Gemini extraction.
-- [ ] **State Persistence:** Create/Update a task record in Firestore to track the processing job.
-- [ ] **Status Updates:** The background task updates the database record to `Processing`, and finally `Succeeded` or `Failed` upon completion.
+- [x] **Trigger Processing:** User selects an `Uploaded` document and a Schema, then clicks "Process".
+- [x] **Long-Running Task:** Backend initiates a background task for Gemini extraction.
+- [x] **State Persistence:** Create/Update a task record in Firestore to track the processing job.
+- [x] **Status Updates:** The background task updates the database record to `Processing`, and finally `Succeeded` or `Failed` upon completion.
 
 ### Story 2.5: Real-time Feedback & Persistence
-- [ ] **Monitoring:** Frontend polls or listens (server push/stream) for status changes on the Document records.
-- [ ] **Persistence:** Users can navigate away from the page and return to see the updated status (no session-only state).
-- [ ] **Completion:** Once `Succeeded`, the extracted data (questions, images) is linked to the document and available for exams.
+- [x] **Monitoring:** Frontend polls or listens (server push/stream) for status changes on the Document records.
+- [x] **Persistence:** Users can navigate away from the page and return to see the updated status (no session-only state).
+- [x] **Completion:** Once `Succeeded`, the extracted data (questions, images) is linked to the document and available for exams.
 
 ---
 
