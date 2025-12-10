@@ -37,6 +37,21 @@ class IngestionService {
     return response.documents;
   }
 
+  Future<void> deleteDocument(String documentId) async {
+    final request = DeleteDocumentRequest()..documentId = documentId;
+    await _stub.deleteDocument(request);
+  }
+
+  Stream<IngestionStatus> processDocument(String documentId, {String? promptOverride}) async* {
+    final request = ProcessRequest()
+      ..documentId = documentId
+      ..promptOverride = promptOverride ?? '';
+    final responseStream = _stub.processDocument(request);
+    await for (var status in responseStream) {
+      yield status;
+    }
+  }
+
   Future<void> shutdown() async {
     await _channel?.shutdown();
   }

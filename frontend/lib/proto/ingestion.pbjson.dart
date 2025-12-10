@@ -67,6 +67,32 @@ final $typed_data.Uint8List processRequestDescriptor = $convert.base64Decode(
     'hlbWFfaWQYAiABKAlSCHNjaGVtYUlkEicKD3Byb21wdF9vdmVycmlkZRgDIAEoCVIOcHJvbXB0'
     'T3ZlcnJpZGU=');
 
+@$core.Deprecated('Use deleteDocumentRequestDescriptor instead')
+const DeleteDocumentRequest$json = {
+  '1': 'DeleteDocumentRequest',
+  '2': [
+    {'1': 'document_id', '3': 1, '4': 1, '5': 9, '10': 'documentId'},
+  ],
+};
+
+/// Descriptor for `DeleteDocumentRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteDocumentRequestDescriptor = $convert.base64Decode(
+    'ChVEZWxldGVEb2N1bWVudFJlcXVlc3QSHwoLZG9jdW1lbnRfaWQYASABKAlSCmRvY3VtZW50SW'
+    'Q=');
+
+@$core.Deprecated('Use deleteDocumentResponseDescriptor instead')
+const DeleteDocumentResponse$json = {
+  '1': 'DeleteDocumentResponse',
+  '2': [
+    {'1': 'success', '3': 1, '4': 1, '5': 8, '10': 'success'},
+  ],
+};
+
+/// Descriptor for `DeleteDocumentResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteDocumentResponseDescriptor =
+    $convert.base64Decode(
+        'ChZEZWxldGVEb2N1bWVudFJlc3BvbnNlEhgKB3N1Y2Nlc3MYASABKAhSB3N1Y2Nlc3M=');
+
 @$core.Deprecated('Use documentDescriptor instead')
 const Document$json = {
   '1': 'Document',

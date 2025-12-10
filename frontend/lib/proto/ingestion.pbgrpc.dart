@@ -61,6 +61,14 @@ class IngestionServiceClient extends $grpc.Client {
         options: options);
   }
 
+  /// Deletes a document.
+  $grpc.ResponseFuture<$0.DeleteDocumentResponse> deleteDocument(
+    $0.DeleteDocumentRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteDocument, request, options: options);
+  }
+
   // method descriptors
 
   static final _$uploadPdf =
@@ -78,6 +86,11 @@ class IngestionServiceClient extends $grpc.Client {
           '/superexam.ingestion.IngestionService/ProcessDocument',
           ($0.ProcessRequest value) => value.writeToBuffer(),
           $0.IngestionStatus.fromBuffer);
+  static final _$deleteDocument =
+      $grpc.ClientMethod<$0.DeleteDocumentRequest, $0.DeleteDocumentResponse>(
+          '/superexam.ingestion.IngestionService/DeleteDocument',
+          ($0.DeleteDocumentRequest value) => value.writeToBuffer(),
+          $0.DeleteDocumentResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('superexam.ingestion.IngestionService')
@@ -108,6 +121,15 @@ abstract class IngestionServiceBase extends $grpc.Service {
         true,
         ($core.List<$core.int> value) => $0.ProcessRequest.fromBuffer(value),
         ($0.IngestionStatus value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DeleteDocumentRequest,
+            $0.DeleteDocumentResponse>(
+        'DeleteDocument',
+        deleteDocument_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.DeleteDocumentRequest.fromBuffer(value),
+        ($0.DeleteDocumentResponse value) => value.writeToBuffer()));
   }
 
   $async.Stream<$0.IngestionStatus> uploadPdf_Pre($grpc.ServiceCall $call,
@@ -134,4 +156,13 @@ abstract class IngestionServiceBase extends $grpc.Service {
 
   $async.Stream<$0.IngestionStatus> processDocument(
       $grpc.ServiceCall call, $0.ProcessRequest request);
+
+  $async.Future<$0.DeleteDocumentResponse> deleteDocument_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.DeleteDocumentRequest> $request) async {
+    return deleteDocument($call, await $request);
+  }
+
+  $async.Future<$0.DeleteDocumentResponse> deleteDocument(
+      $grpc.ServiceCall call, $0.DeleteDocumentRequest request);
 }

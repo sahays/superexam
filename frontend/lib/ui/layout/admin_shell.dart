@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/ui/common/ui_painters.dart';
-import 'package:frontend/ui/screens/ingestion_screen.dart';
 import 'package:frontend/ui/screens/documents_screen.dart';
 
 class AdminShell extends StatefulWidget {
@@ -26,16 +25,14 @@ class _AdminShellState extends State<AdminShell> {
 
   final List<Widget> _pages = [
     const DocumentsScreen(),
-    const IngestionScreen(),
     const Center(child: Text("Exams (Coming Soon)")),
-    const Center(child: Text("Stats (Coming Soon)")),
+    const Center(child: Text("Prompts (Coming Soon)")),
   ];
 
   final List<String> _titles = [
     'Documents',
-    'Upload',
     'Exams',
-    'Stats',
+    'Prompts',
   ];
 
   void _toggleSidebar() {
@@ -237,28 +234,20 @@ class _AdminShellState extends State<AdminShell> {
                 onTap: () => _onItemTapped(0),
               ),
               _SidebarItem(
-                icon: Icons.cloud_upload_outlined,
-                label: 'Upload',
+                icon: Icons.library_books_outlined,
+                label: 'Exams',
                 isActive: _selectedIndex == 1,
                 isCollapsed: collapsed,
                 textColor: textColor,
                 onTap: () => _onItemTapped(1),
               ),
               _SidebarItem(
-                icon: Icons.library_books_outlined,
-                label: 'Exams',
+                icon: Icons.lightbulb_outlined,
+                label: 'Prompts',
                 isActive: _selectedIndex == 2,
                 isCollapsed: collapsed,
                 textColor: textColor,
                 onTap: () => _onItemTapped(2),
-              ),
-              _SidebarItem(
-                icon: Icons.analytics_outlined,
-                label: 'Stats',
-                isActive: _selectedIndex == 3,
-                isCollapsed: collapsed,
-                textColor: textColor,
-                onTap: () => _onItemTapped(3),
               ),
               
               const Spacer(),

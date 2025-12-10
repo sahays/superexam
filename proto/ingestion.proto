@@ -12,6 +12,9 @@ service IngestionService {
 
   // Triggers processing (extraction) for an existing document.
   rpc ProcessDocument (ProcessRequest) returns (stream IngestionStatus);
+
+  // Deletes a document.
+  rpc DeleteDocument (DeleteDocumentRequest) returns (DeleteDocumentResponse);
 }
 
 message ListDocumentsRequest {
@@ -28,6 +31,14 @@ message ProcessRequest {
   string document_id = 1;
   string schema_id = 2;
   string prompt_override = 3;
+}
+
+message DeleteDocumentRequest {
+  string document_id = 1;
+}
+
+message DeleteDocumentResponse {
+  bool success = 1;
 }
 
 message Document {

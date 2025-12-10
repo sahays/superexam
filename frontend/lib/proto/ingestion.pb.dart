@@ -229,6 +229,118 @@ class ProcessRequest extends $pb.GeneratedMessage {
   void clearPromptOverride() => $_clearField(3);
 }
 
+class DeleteDocumentRequest extends $pb.GeneratedMessage {
+  factory DeleteDocumentRequest({
+    $core.String? documentId,
+  }) {
+    final result = create();
+    if (documentId != null) result.documentId = documentId;
+    return result;
+  }
+
+  DeleteDocumentRequest._();
+
+  factory DeleteDocumentRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteDocumentRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteDocumentRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'documentId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteDocumentRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteDocumentRequest copyWith(
+          void Function(DeleteDocumentRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteDocumentRequest))
+          as DeleteDocumentRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteDocumentRequest create() => DeleteDocumentRequest._();
+  @$core.override
+  DeleteDocumentRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteDocumentRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteDocumentRequest>(create);
+  static DeleteDocumentRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get documentId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set documentId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDocumentId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDocumentId() => $_clearField(1);
+}
+
+class DeleteDocumentResponse extends $pb.GeneratedMessage {
+  factory DeleteDocumentResponse({
+    $core.bool? success,
+  }) {
+    final result = create();
+    if (success != null) result.success = success;
+    return result;
+  }
+
+  DeleteDocumentResponse._();
+
+  factory DeleteDocumentResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteDocumentResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteDocumentResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'success')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteDocumentResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteDocumentResponse copyWith(
+          void Function(DeleteDocumentResponse) updates) =>
+      super.copyWith((message) => updates(message as DeleteDocumentResponse))
+          as DeleteDocumentResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteDocumentResponse create() => DeleteDocumentResponse._();
+  @$core.override
+  DeleteDocumentResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteDocumentResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteDocumentResponse>(create);
+  static DeleteDocumentResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get success => $_getBF(0);
+  @$pb.TagNumber(1)
+  set success($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSuccess() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSuccess() => $_clearField(1);
+}
+
 class Document extends $pb.GeneratedMessage {
   factory Document({
     $core.String? id,
