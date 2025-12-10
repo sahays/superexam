@@ -2,14 +2,16 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/ui/common/ui_painters.dart';
+import 'package:frontend/ui/screens/ingestion_screen.dart';
+import 'package:frontend/ui/screens/documents_screen.dart';
 
 class AdminShell extends StatefulWidget {
-  final Widget child;
+  final Widget? child; // Deprecated: Navigation handled internally
   final String title;
 
   const AdminShell({
     super.key, 
-    required this.child, 
+    this.child, 
     this.title = 'SuperExam',
   });
 
@@ -20,11 +22,35 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isSidebarCollapsed = false;
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    const DocumentsScreen(),
+    const IngestionScreen(),
+    const Center(child: Text("Exams (Coming Soon)")),
+    const Center(child: Text("Stats (Coming Soon)")),
+  ];
+
+  final List<String> _titles = [
+    'Documents',
+    'Upload',
+    'Exams',
+    'Stats',
+  ];
 
   void _toggleSidebar() {
     setState(() {
       _isSidebarCollapsed = !_isSidebarCollapsed;
     });
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (MediaQuery.of(context).size.width < 900) {
+      Navigator.pop(context); // Close drawer on mobile
+    }
   }
 
   @override
@@ -83,7 +109,7 @@ class _AdminShellState extends State<AdminShell> {
                               constraints: const BoxConstraints(maxWidth: 1280),
                               child: Padding(
                                 padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-                                child: widget.child,
+                                child: _pages[_selectedIndex],
                               ),
                             ),
                           ),
@@ -203,25 +229,36 @@ class _AdminShellState extends State<AdminShell> {
               
               // Navigation Items
               _SidebarItem(
-                icon: Icons.cloud_upload_outlined,
-                label: 'Ingestion',
-                isActive: true,
+                icon: Icons.description_outlined,
+                label: 'Documents',
+                isActive: _selectedIndex == 0,
                 isCollapsed: collapsed,
                 textColor: textColor,
+                onTap: () => _onItemTapped(0),
+              ),
+              _SidebarItem(
+                icon: Icons.cloud_upload_outlined,
+                label: 'Upload',
+                isActive: _selectedIndex == 1,
+                isCollapsed: collapsed,
+                textColor: textColor,
+                onTap: () => _onItemTapped(1),
               ),
               _SidebarItem(
                 icon: Icons.library_books_outlined,
                 label: 'Exams',
-                isActive: false,
+                isActive: _selectedIndex == 2,
                 isCollapsed: collapsed,
                 textColor: textColor,
+                onTap: () => _onItemTapped(2),
               ),
               _SidebarItem(
                 icon: Icons.analytics_outlined,
                 label: 'Stats',
-                isActive: false,
+                isActive: _selectedIndex == 3,
                 isCollapsed: collapsed,
                 textColor: textColor,
+                onTap: () => _onItemTapped(3),
               ),
               
               const Spacer(),
@@ -266,7 +303,7 @@ class _AdminShellState extends State<AdminShell> {
               if (isMobile) const SizedBox(width: 8),
 
               Text(
-                widget.title,
+                _titles[_selectedIndex],
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -319,6 +356,7 @@ class _SidebarItem extends StatelessWidget {
   final bool isActive;
   final bool isCollapsed;
   final Color textColor;
+  final VoidCallback onTap;
 
   const _SidebarItem({
     required this.icon,
@@ -326,6 +364,7 @@ class _SidebarItem extends StatelessWidget {
     required this.isActive,
     required this.isCollapsed,
     required this.textColor,
+    required this.onTap,
   });
 
   @override
@@ -337,7 +376,7 @@ class _SidebarItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {}, // TODO: Navigation
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           hoverColor: activeColor.withOpacity(0.1),
           child: Container(

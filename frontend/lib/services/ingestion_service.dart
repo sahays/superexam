@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:grpc/grpc.dart';
 import 'package:frontend/proto/ingestion.pbgrpc.dart';
 import 'package:frontend/services/grpc_channel.dart';
 import 'dart:typed_data';
@@ -30,6 +29,12 @@ class IngestionService {
     await for (var status in responseStream) {
       yield status;
     }
+  }
+
+  Future<List<Document>> listDocuments() async {
+    final request = ListDocumentsRequest();
+    final response = await _stub.listDocuments(request);
+    return response.documents;
   }
 
   Future<void> shutdown() async {

@@ -6,6 +6,35 @@ service IngestionService {
   // Uploads a PDF file (as a single message) and receives a stream of status updates.
   // Changed from bidirectional streaming to support gRPC-Web.
   rpc UploadPdf (UploadRequest) returns (stream IngestionStatus);
+
+  // Lists all uploaded documents and their current status.
+  rpc ListDocuments (ListDocumentsRequest) returns (ListDocumentsResponse);
+
+  // Triggers processing (extraction) for an existing document.
+  rpc ProcessDocument (ProcessRequest) returns (stream IngestionStatus);
+}
+
+message ListDocumentsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListDocumentsResponse {
+  repeated Document documents = 1;
+  string next_page_token = 2;
+}
+
+message ProcessRequest {
+  string document_id = 1;
+  string schema_id = 2;
+  string prompt_override = 3;
+}
+
+message Document {
+  string id = 1;
+  string filename = 2;
+  string status = 3; // e.g. "Uploaded", "Processing", "Succeeded", "Failed"
+  string created_at = 4; // ISO 8601 timestamp
 }
 
 message UploadRequest {

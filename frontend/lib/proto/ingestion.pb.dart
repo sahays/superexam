@@ -20,6 +20,305 @@ export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'ingestion.pbenum.dart';
 
+class ListDocumentsRequest extends $pb.GeneratedMessage {
+  factory ListDocumentsRequest({
+    $core.int? pageSize,
+    $core.String? pageToken,
+  }) {
+    final result = create();
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageToken != null) result.pageToken = pageToken;
+    return result;
+  }
+
+  ListDocumentsRequest._();
+
+  factory ListDocumentsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListDocumentsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListDocumentsRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'pageSize')
+    ..aOS(2, _omitFieldNames ? '' : 'pageToken')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListDocumentsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListDocumentsRequest copyWith(void Function(ListDocumentsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListDocumentsRequest))
+          as ListDocumentsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListDocumentsRequest create() => ListDocumentsRequest._();
+  @$core.override
+  ListDocumentsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListDocumentsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListDocumentsRequest>(create);
+  static ListDocumentsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get pageSize => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set pageSize($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPageSize() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPageSize() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get pageToken => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set pageToken($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPageToken() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPageToken() => $_clearField(2);
+}
+
+class ListDocumentsResponse extends $pb.GeneratedMessage {
+  factory ListDocumentsResponse({
+    $core.Iterable<Document>? documents,
+    $core.String? nextPageToken,
+  }) {
+    final result = create();
+    if (documents != null) result.documents.addAll(documents);
+    if (nextPageToken != null) result.nextPageToken = nextPageToken;
+    return result;
+  }
+
+  ListDocumentsResponse._();
+
+  factory ListDocumentsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListDocumentsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListDocumentsResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
+      createEmptyInstance: create)
+    ..pPM<Document>(1, _omitFieldNames ? '' : 'documents',
+        subBuilder: Document.create)
+    ..aOS(2, _omitFieldNames ? '' : 'nextPageToken')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListDocumentsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListDocumentsResponse copyWith(
+          void Function(ListDocumentsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListDocumentsResponse))
+          as ListDocumentsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListDocumentsResponse create() => ListDocumentsResponse._();
+  @$core.override
+  ListDocumentsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListDocumentsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListDocumentsResponse>(create);
+  static ListDocumentsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<Document> get documents => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.String get nextPageToken => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set nextPageToken($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasNextPageToken() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearNextPageToken() => $_clearField(2);
+}
+
+class ProcessRequest extends $pb.GeneratedMessage {
+  factory ProcessRequest({
+    $core.String? documentId,
+    $core.String? schemaId,
+    $core.String? promptOverride,
+  }) {
+    final result = create();
+    if (documentId != null) result.documentId = documentId;
+    if (schemaId != null) result.schemaId = schemaId;
+    if (promptOverride != null) result.promptOverride = promptOverride;
+    return result;
+  }
+
+  ProcessRequest._();
+
+  factory ProcessRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ProcessRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ProcessRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'documentId')
+    ..aOS(2, _omitFieldNames ? '' : 'schemaId')
+    ..aOS(3, _omitFieldNames ? '' : 'promptOverride')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ProcessRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ProcessRequest copyWith(void Function(ProcessRequest) updates) =>
+      super.copyWith((message) => updates(message as ProcessRequest))
+          as ProcessRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ProcessRequest create() => ProcessRequest._();
+  @$core.override
+  ProcessRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ProcessRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ProcessRequest>(create);
+  static ProcessRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get documentId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set documentId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDocumentId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDocumentId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get schemaId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set schemaId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSchemaId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSchemaId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get promptOverride => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set promptOverride($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPromptOverride() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPromptOverride() => $_clearField(3);
+}
+
+class Document extends $pb.GeneratedMessage {
+  factory Document({
+    $core.String? id,
+    $core.String? filename,
+    $core.String? status,
+    $core.String? createdAt,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (filename != null) result.filename = filename;
+    if (status != null) result.status = status;
+    if (createdAt != null) result.createdAt = createdAt;
+    return result;
+  }
+
+  Document._();
+
+  factory Document.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Document.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Document',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'superexam.ingestion'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'filename')
+    ..aOS(3, _omitFieldNames ? '' : 'status')
+    ..aOS(4, _omitFieldNames ? '' : 'createdAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Document clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Document copyWith(void Function(Document) updates) =>
+      super.copyWith((message) => updates(message as Document)) as Document;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Document create() => Document._();
+  @$core.override
+  Document createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static Document getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Document>(create);
+  static Document? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get filename => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set filename($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasFilename() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearFilename() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get status => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set status($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasStatus() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearStatus() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get createdAt => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set createdAt($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCreatedAt() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCreatedAt() => $_clearField(4);
+}
+
 class UploadRequest extends $pb.GeneratedMessage {
   factory UploadRequest({
     FileMetadata? metadata,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/ui/screens/ingestion_screen.dart';
 import 'package:frontend/ui/layout/admin_shell.dart';
 
 void main() {
@@ -19,8 +18,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Inter',
       ),
       home: const AdminShell(
-        title: 'Exam Ingestion',
-        child: IngestionScreen(),
+        title: 'SuperExam',
       ),
     );
   }
