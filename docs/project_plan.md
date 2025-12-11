@@ -46,22 +46,22 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 - [x] Implement "Upload Document" Dialog (File dropzone).
 - [x] List existing documents.
 - [x] Implement Delete action.
-- [ ] **UI Update:** Update Document Card to show "Not Processed" state (Status: `uploaded`).
-- [ ] **UI Update:** Add "Process" button to Document Card (opens Schema Dialog).
+- [x] **UI Update:** Update Document Card to show "Not Processed" state (Status: `uploaded`).
+- [x] **UI Update:** Add "Process" button to Document Card (opens Schema Dialog).
 
 ### Story 2.2: Upload Pipeline (File Storage)
 - [x] Implement file upload handler.
-- [ ] **Refactor:** Store PDF file persistently (Local filesystem for prototype) instead of transient processing.
-- [ ] **Refactor:** Save Document Metadata to Firestore (Status: `uploaded`).
-- [ ] **Refactor:** Remove automatic text extraction and AI generation from this step.
+- [x] **Refactor:** Store PDF file persistently (Local filesystem for prototype) instead of transient processing.
+- [x] **Refactor:** Save Document Metadata to Firestore (Status: `uploaded`).
+- [x] **Refactor:** Remove automatic text extraction and AI generation from this step.
 
 ### Story 2.4: Manual Processing with Schema
-- [ ] Implement "Process Document" Dialog:
+- [x] Implement "Process Document" Dialog:
     -   Allows user to upload a JSON Schema file.
-- [ ] Update `ai.ts` service:
+- [x] Update `ai.ts` service:
     -   Switch to Multimodal input (Send PDF binary + Schema to Gemini).
     -   Remove `pdf-parse` dependency.
-- [ ] Implement `processDocument` Server Action:
+- [x] Implement `processDocument` Server Action:
     -   Reads stored PDF.
     -   Reads uploaded Schema.
     -   Calls Gemini.
