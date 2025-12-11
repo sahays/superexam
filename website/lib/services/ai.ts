@@ -21,9 +21,7 @@ export async function generateQuestionsFromText(text: string, count: number = 10
     You are an expert exam generator. 
     Analyze the following text and generate ${count} multiple-choice questions.
     
-    Return ONLY a valid JSON array of objects. Do not include markdown formatting (like 
-```json
-). Each object must have this structure:
+    Return ONLY a valid JSON array of objects. Do not include markdown formatting (no code blocks). Each object must have this structure:
     {
       "text": "Question text here",
       "options": ["Option A", "Option B", "Option C", "Option D"],
@@ -85,7 +83,7 @@ export async function generateQuestionsFromPDF(pdfBuffer: Buffer, schema: string
     const textResponse = response.text();
 
     const jsonString = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-    const questions: Omit<Question, 'id'>[] = JSON.parse(jsonString);
+    const questions: any[] = JSON.parse(jsonString);
 
     // Validate/Ensure ID exists if schema didn't force it
     return questions.map((q, index) => ({

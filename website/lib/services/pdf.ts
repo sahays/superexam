@@ -1,4 +1,5 @@
-import pdf from 'pdf-parse';
+// @ts-ignore
+const pdf = require('pdf-parse');
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {

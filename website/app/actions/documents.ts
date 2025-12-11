@@ -30,7 +30,7 @@ export async function uploadDocument(formData: FormData) {
 
     // 2. Create Document Record
     const docRef = db.collection('documents').doc();
-    constTX docId = docRef.id;
+    const docId = docRef.id;
     const now = Date.now();
 
     const newDoc: Document = {
