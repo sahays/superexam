@@ -165,9 +165,12 @@ export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
               <Button
               className="flex-1"
               disabled={doc.status !== 'ready'}
+              asChild
               >
-              <Play className="mr-2 h-4 w-4" />
-              Take Exam
+              <Link href={`/exams/${doc.id}/configure`}>
+                <Play className="mr-2 h-4 w-4" />
+                Take Exam
+              </Link>
               </Button>
           )}
 
