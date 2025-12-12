@@ -7,11 +7,22 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
 import { useExamStore } from "@/lib/stores/exam-store"
 import { updateExamAnswer, submitExam } from "@/app/actions/exams"
 import { toast } from "sonner"
 import Link from "next/link"
+import { AskAIDialog } from "./ask-ai-dialog"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { formatDistanceToNow } from "date-fns"
+import type { QuestionExplanation } from "@/lib/types"
 
 interface ExamInterfaceProps {
   session: any
@@ -38,6 +49,7 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
 
   const [showResults, setShowResults] = useState(isCompleted)
   const [localAnswers, setLocalAnswers] = useState<Record<string, number>>(session.answers || {})
+  const [questionExplanations, setQuestionExplanations] = useState<Record<string, QuestionExplanation>>({})
 
   // Initialize total questions
   useEffect(() => {
@@ -217,12 +229,65 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                     })}
                   </div>
 
-                  {question.explanation && (
-                    <div className="rounded-md bg-muted/50 p-3 border border-border">
-                      <p className="text-sm font-medium mb-1">Explanation:</p>
-                      <p className="text-sm text-muted-foreground">{question.explanation}</p>
+                  {/* AI Explanation Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <AskAIDialog
+                        question={question}
+                        documentId={document.id}
+                        onExplanationGenerated={(explanation) => {
+                          setQuestionExplanations(prev => ({
+                            ...prev,
+                            [question.id]: explanation
+                          }))
+                        }}
+                      />
                     </div>
-                  )}
+
+                    {(question.explanation || questionExplanations[question.id]) && (
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="explanation" className="border rounded-md">
+                          <AccordionTrigger className="px-4 hover:no-underline">
+                            <span className="text-sm font-medium">AI Explanation</span>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="space-y-3">
+                              <div className="text-xs text-muted-foreground">
+                                {(() => {
+                                  const explanation = questionExplanations[question.id] || question.explanation
+                                  if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
+                                    return (
+                                      <>
+                                        Generated with <span className="font-medium">{explanation.promptName}</span>
+                                        {' '}({explanation.promptType})
+                                        {explanation.generatedAt && (
+                                          <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
+                                        )}
+                                      </>
+                                    )
+                                  }
+                                  return null
+                                })()}
+                              </div>
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {(() => {
+                                    const explanation = questionExplanations[question.id] || question.explanation
+                                    if (typeof explanation === 'string') {
+                                      return explanation
+                                    } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
+                                      return explanation.content
+                                    }
+                                    return ''
+                                  })()}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )
@@ -312,6 +377,66 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
               </button>
             )
           })}
+
+          {/* AI Explanation Section - Active Exam */}
+          <div className="space-y-3 mt-6">
+            <div className="flex items-center justify-between">
+              <AskAIDialog
+                question={currentQuestion}
+                documentId={document.id}
+                onExplanationGenerated={(explanation) => {
+                  setQuestionExplanations(prev => ({
+                    ...prev,
+                    [currentQuestion.id]: explanation
+                  }))
+                }}
+              />
+            </div>
+
+            {(currentQuestion.explanation || questionExplanations[currentQuestion.id]) && (
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="explanation" className="border rounded-md">
+                  <AccordionTrigger className="px-4 hover:no-underline">
+                    <span className="text-sm font-medium">AI Explanation</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-3">
+                      <div className="text-xs text-muted-foreground">
+                        {(() => {
+                          const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
+                          if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
+                            return (
+                              <>
+                                Generated with <span className="font-medium">{explanation.promptName}</span>
+                                {' '}({explanation.promptType})
+                                {explanation.generatedAt && (
+                                  <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
+                                )}
+                              </>
+                            )
+                          }
+                          return null
+                        })()}
+                      </div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {(() => {
+                            const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
+                            if (typeof explanation === 'string') {
+                              return explanation
+                            } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
+                              return explanation.content
+                            }
+                            return ''
+                          })()}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+          </div>
         </CardContent>
 
         <CardFooter className="flex justify-between border-t pt-4">

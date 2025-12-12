@@ -1,9 +1,17 @@
+export interface QuestionExplanation {
+  content: string;
+  promptId: string;
+  promptName: string;
+  promptType: 'system' | 'custom';
+  generatedAt: number;
+}
+
 export interface Question {
   id: string;
   text: string;
   options: string[];
   correctAnswer: number; // Index of the correct option (0-3)
-  explanation?: string;
+  explanation?: QuestionExplanation;
 }
 
 export type DocumentStatus = 'uploaded' | 'processing' | 'ready' | 'failed';
