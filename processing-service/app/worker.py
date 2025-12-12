@@ -37,13 +37,20 @@ class Worker:
             "started_at": int(time.time())
         })
 
-        # Update Firestore - Starting
+        # Update Firestore - Starting (store prompt IDs and schema for reference)
         firestore_service.update_status(
             doc_id,
             status="processing",
             progress=0,
             current_step="Starting processing..."
         )
+
+        # Store processing configuration
+        firestore_service.db.collection('documents').document(doc_id).update({
+            "systemPromptId": job["system_prompt_id"],
+            "customPromptId": job["custom_prompt_id"],
+            "schema": job.get("schema")
+        })
 
         try:
             # Step 1: Get document metadata (10%)

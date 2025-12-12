@@ -4,7 +4,8 @@ import { Document } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Play, Trash2, FileText, Loader2, AlertCircle, Clock } from "lucide-react"
+import { Play, Trash2, FileText, Loader2, AlertCircle, Clock, Info } from "lucide-react"
+import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { deleteDocument, getDocumentStatus } from "@/app/actions/documents"
 import { toast } from "sonner"
@@ -168,6 +169,19 @@ export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
               <Play className="mr-2 h-4 w-4" />
               Take Exam
               </Button>
+          )}
+
+          {doc.status === 'ready' && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-primary shrink-0"
+              asChild
+            >
+              <Link href={`/documents/${doc.id}`}>
+                <Info className="h-4 w-4" />
+              </Link>
+            </Button>
           )}
 
           <Button

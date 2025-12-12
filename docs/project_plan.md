@@ -57,7 +57,7 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 - [x] **Refactor:** Add "Process" button only for `uploaded` status documents.
 - [x] **Refactor:** Show processing progress indicator on card during processing.
 - [x] **Refactor:** Poll for status updates when document is processing.
-- [ ] **Enhancement:** Add info button to view document details (prompts used and generated questions).
+- [x] **Enhancement:** Add info button to view document details (prompts used and generated questions).
 
 ---
 
@@ -163,23 +163,23 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 
 ---
 
-## Epic 8: Document Details Page
+## Epic 8: Document Details Page ✅ COMPLETE
 **Goal:** Provide a detailed view of document processing inputs and outputs.
 
 ### Story 8.1: Document Details Page
-- [ ] Create `/documents/[id]` dynamic route for document details.
-- [ ] Display document metadata (title, upload date, status).
-- [ ] Show processing inputs:
+- [x] Create `/documents/[id]` dynamic route for document details.
+- [x] Display document metadata (title, upload date, status).
+- [x] Show processing inputs:
     - System prompt used (name and full content).
     - Custom prompt used (name and full content).
     - Schema used (if applicable).
-- [ ] Display all generated questions with their answers and options.
-- [ ] Add navigation back to documents list.
+- [x] Display all generated questions with their answers and options.
+- [x] Add navigation back to documents list.
 
 ### Story 8.2: Info Button on Document Card
-- [ ] Add info/details icon button to document card.
-- [ ] Link to document details page (`/documents/[id]`).
-- [ ] Show button only for documents with status `ready` (processed).
+- [x] Add info/details icon button to document card.
+- [x] Link to document details page (`/documents/[id]`).
+- [x] Show button only for documents with status `ready` (processed).
 
 ---
 

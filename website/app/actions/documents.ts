@@ -206,3 +206,70 @@ export async function deleteDocument(docId: string) {
     return { error: 'Failed to delete document' };
   }
 }
+
+export async function getDocumentDetails(docId: string) {
+  try {
+    const docRef = db.collection('documents').doc(docId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return { error: 'Document not found' };
+    }
+
+    const data = docSnap.data() as any;
+    const document = {
+      ...data,
+      id: docSnap.id,
+      createdAt: data?.createdAt?.toMillis?.() ?? data?.createdAt ?? Date.now(),
+      updatedAt: data?.updatedAt?.toMillis?.() ?? data?.updatedAt ?? Date.now(),
+    } as Document & { systemPromptId?: string; customPromptId?: string; schema?: string };
+
+    // Fetch prompts if they exist
+    let systemPrompt = null;
+    let customPrompt = null;
+
+    if (document.systemPromptId) {
+      const systemPromptSnap = await db.collection('system-prompts').doc(document.systemPromptId).get();
+      if (systemPromptSnap.exists) {
+        const promptData = systemPromptSnap.data() as any;
+        systemPrompt = {
+          ...promptData,
+          id: systemPromptSnap.id,
+          createdAt: promptData?.createdAt?.toMillis?.() ?? promptData?.createdAt ?? Date.now(),
+          updatedAt: promptData?.updatedAt?.toMillis?.() ?? promptData?.updatedAt ?? Date.now(),
+        };
+      }
+    }
+
+    if (document.customPromptId) {
+      const customPromptSnap = await db.collection('custom-prompts').doc(document.customPromptId).get();
+      if (customPromptSnap.exists) {
+        const promptData = customPromptSnap.data() as any;
+        customPrompt = {
+          ...promptData,
+          id: customPromptSnap.id,
+          createdAt: promptData?.createdAt?.toMillis?.() ?? promptData?.createdAt ?? Date.now(),
+          updatedAt: promptData?.updatedAt?.toMillis?.() ?? promptData?.updatedAt ?? Date.now(),
+        };
+      }
+    }
+
+    // Fetch questions
+    const questionsSnapshot = await docRef.collection('questions').get();
+    const questions = questionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return {
+      success: true,
+      document,
+      systemPrompt,
+      customPrompt,
+      questions
+    };
+  } catch (error) {
+    console.error('Get document details error:', error);
+    return { error: 'Failed to fetch document details' };
+  }
+}
