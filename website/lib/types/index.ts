@@ -6,15 +6,34 @@ export interface Question {
   explanation?: string;
 }
 
-export type DocumentStatus = 'uploading' | 'processing' | 'ready' | 'failed';
+export type DocumentStatus = 'uploaded' | 'processing' | 'ready' | 'failed';
 
 export interface Document {
   id: string;
   title: string;
-  status: 'uploaded' | 'processing' | 'ready' | 'failed';
+  status: DocumentStatus;
   questionCount: number;
   createdAt: number;
+  filePath?: string;
+  progress?: number; // 0-100
+  currentStep?: string; // e.g., "Analyzing PDF...", "Generating questions..."
   error?: string;
+}
+
+export interface SystemPrompt {
+  id: string;
+  name: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CustomPrompt {
+  id: string;
+  name: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Exam {
@@ -25,4 +44,14 @@ export interface Exam {
   score?: number;
   createdAt: number;
   completedAt?: number;
+}
+
+export interface ExamSession {
+  id: string;
+  documentId: string;
+  userId?: string;
+  answers: Record<string, number>; // questionId -> selected option index
+  score: number;
+  startedAt: number;
+  completedAt: number;
 }

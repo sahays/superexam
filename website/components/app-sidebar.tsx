@@ -10,30 +10,25 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar"
-import { FileText, BookOpen, History, Settings, Home } from "lucide-react"
+import { FileText, BookOpen, MessageSquare, Home } from "lucide-react"
 import Link from "next/link"
 
 // Menu items.
 const items = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
   {
     title: "Documents",
     url: "/documents",
     icon: FileText,
   },
   {
+    title: "Prompts",
+    url: "/prompts",
+    icon: MessageSquare,
+  },
+  {
     title: "Exams",
     url: "/exams",
     icon: BookOpen,
-  },
-  {
-    title: "History",
-    url: "/history",
-    icon: History,
   },
 ]
 
@@ -41,9 +36,10 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 border-b border-sidebar-border/50">
-        <div className="flex items-center gap-2 font-bold text-xl text-primary">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary hover:opacity-80 transition-opacity">
+          <Home className="h-5 w-5" />
           <span className="truncate">SuperExam</span>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

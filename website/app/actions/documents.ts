@@ -10,22 +10,29 @@ import { generateQuestionsFromPDF } from "@/lib/services/ai";
 export async function uploadDocument(formData: FormData) {
   try {
     const file = formData.get('file') as File;
+    const name = formData.get('name') as string;
+
     if (!file) {
       return { error: 'No file provided' };
+    }
+
+    if (!name || !name.trim()) {
+      return { error: 'Document name is required' };
     }
 
     // 1. Save File to Local System
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     // Ensure unique filename
     const uniqueFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const uploadDir = join(process.cwd(), 'uploads');
+    // Save to superexam/uploads (parent directory)
+    const uploadDir = join(process.cwd(), '..', 'uploads');
     const filePath = join(uploadDir, uniqueFilename);
-    
+
     // Ensure directory exists (Node 10+ recursive) - actually we did this in shell, but good practice
-    // await mkdir(uploadDir, { recursive: true }); 
-    
+    // await mkdir(uploadDir, { recursive: true });
+
     await writeFile(filePath, buffer);
 
     // 2. Create Document Record
@@ -35,12 +42,11 @@ export async function uploadDocument(formData: FormData) {
 
     const newDoc: Document = {
       id: docId,
-      title: file.name,
+      title: name.trim(), // Use the provided name instead of filename
       status: 'uploaded', // New status: waiting for processing
       questionCount: 0,
       createdAt: now,
-      // @ts-expect-error Adding filePath to doc even if not in shared type yet (or update type later)
-      filePath: uniqueFilename 
+      filePath: uniqueFilename
     };
 
     await docRef.set(newDoc);
@@ -54,72 +60,145 @@ export async function uploadDocument(formData: FormData) {
   }
 }
 
-export async function processDocument(docId: string, schemaContent: string) {
+export async function processDocument(docId: string, systemPromptId: string, customPromptId: string, schema: string | null) {
   try {
-    // 1. Get Document Metadata
+    // 1. Verify document exists
     const docRef = db.collection('documents').doc(docId);
     const docSnap = await docRef.get();
-    
+
     if (!docSnap.exists) {
       return { error: 'Document not found' };
     }
 
     const docData = docSnap.data() as Document & { filePath?: string };
     if (!docData.filePath) {
-        return { error: 'File path missing for this document.' };
+      return { error: 'File path missing for this document.' };
     }
 
-    // 2. Read File
-    const uploadDir = join(process.cwd(), 'uploads');
-    const filePath = join(uploadDir, docData.filePath);
-    const fileBuffer = await readFile(filePath);
+    // 2. Verify prompts exist
+    const [systemPromptSnap, customPromptSnap] = await Promise.all([
+      db.collection('system-prompts').doc(systemPromptId).get(),
+      db.collection('custom-prompts').doc(customPromptId).get()
+    ]);
 
-    // 3. Update Status to Processing
-    await docRef.update({ status: 'processing' });
-    revalidatePath('/documents');
-
-    // 4. Generate Questions (AI) with Schema
-    let questions: Question[] = [];
-    try {
-      questions = await generateQuestionsFromPDF(fileBuffer, schemaContent);
-    } catch (aiError) {
-      console.error("AI Generation failed:", aiError);
-      await docRef.update({ status: 'failed', error: 'AI generation failed' });
-      return { error: 'AI generation failed. Please try again.' };
+    if (!systemPromptSnap.exists || !customPromptSnap.exists) {
+      return { error: 'One or both prompts not found' };
     }
 
-    // 5. Save Questions and Update Document
-    const batch = db.batch();
-
-    // Update main document status
-    batch.update(docRef, {
-      status: 'ready',
-      questionCount: questions.length
+    // 3. Update status to processing immediately
+    await docRef.update({
+      status: 'processing',
+      currentStep: 'Queuing job...',
+      progress: 0
     });
-
-    // Add questions to subcollection
-    const questionsCollection = docRef.collection('questions');
-    questions.forEach((q) => {
-      const qRef = questionsCollection.doc(q.id);
-      batch.set(qRef, q);
-    });
-
-    await batch.commit();
-
     revalidatePath('/documents');
-    return { success: true, message: 'Document processed successfully' };
+
+    // 4. Call Python processing service
+    const processingServiceUrl = process.env.PROCESSING_SERVICE_URL || 'http://localhost:8000';
+
+    const response = await fetch(`${processingServiceUrl}/jobs/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doc_id: docId,
+        system_prompt_id: systemPromptId,
+        custom_prompt_id: customPromptId,
+        schema: schema
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Processing service returned ${response.status}`);
+    }
+
+    const { job_id } = await response.json();
+
+    console.log(`Processing job ${job_id} created for document ${docId}`);
+
+    // 5. Return immediately - processing happens in background
+    revalidatePath('/documents');
+    return { success: true, message: 'Processing started', jobId: job_id };
 
   } catch (error) {
     console.error('Processing error:', error);
-    // Attempt to revert status if possible, or just leave as processing/failed
-    return { error: 'Internal server error during processing.' };
+
+    // Update status to failed
+    try {
+      await db.collection('documents').doc(docId).update({
+        status: 'failed',
+        error: 'Failed to start processing',
+        currentStep: undefined,
+        progress: undefined
+      });
+      revalidatePath('/documents');
+    } catch (updateError) {
+      console.error('Failed to update error status:', updateError);
+    }
+
+    return { error: 'Failed to start processing. Please try again.' };
+  }
+}
+
+export async function getDocumentStatus(docId: string) {
+  try {
+    const docRef = db.collection('documents').doc(docId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return { error: 'Document not found' };
+    }
+
+    const data = docSnap.data() as any;
+
+    // Convert Firestore Timestamp to plain number/date
+    const document = {
+      ...data,
+      id: docSnap.id,
+      createdAt: data?.createdAt?.toMillis?.() ?? data?.createdAt ?? Date.now(),
+      updatedAt: data?.updatedAt?.toMillis?.() ?? data?.updatedAt ?? Date.now(),
+    } as Document;
+
+    return { success: true, document };
+  } catch (error) {
+    console.error('Get document status error:', error);
+    return { error: 'Failed to fetch document status' };
   }
 }
 
 export async function deleteDocument(docId: string) {
   try {
-    // Optional: Delete local file if we want to be clean
-    await db.collection('documents').doc(docId).delete();
+    // 1. Get document to find file path
+    const docRef = db.collection('documents').doc(docId);
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists) {
+      const docData = docSnap.data() as Document & { filePath?: string };
+
+      // 2. Delete the physical PDF file
+      if (docData.filePath) {
+        try {
+          const uploadDir = join(process.cwd(), '..', 'uploads');
+          const filePath = join(uploadDir, docData.filePath);
+          const { unlink } = await import('fs/promises');
+          await unlink(filePath);
+          console.log(`Deleted file: ${filePath}`);
+        } catch (fileError) {
+          console.error('Failed to delete file:', fileError);
+          // Continue with document deletion even if file deletion fails
+        }
+      }
+
+      // 3. Delete questions subcollection
+      const questionsSnapshot = await docRef.collection('questions').get();
+      const batch = db.batch();
+      questionsSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+
+    // 4. Delete the document from Firestore
+    await docRef.delete();
     revalidatePath('/documents');
     return { success: true };
   } catch (error) {

@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-localhost}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-superexam:}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - MAX_RETRY_ATTEMPTS=${MAX_RETRY_ATTEMPTS:-3}
+      - DEBUG=${DEBUG:-false}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+    volumes:
+      - ../uploads:/uploads:ro
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
+    network_mode: host
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+
+  worker:
+    build: .
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-localhost}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-superexam:}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - MAX_RETRY_ATTEMPTS=${MAX_RETRY_ATTEMPTS:-3}
+      - DEBUG=${DEBUG:-false}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+    volumes:
+      - ../uploads:/uploads:ro
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
+    network_mode: host
+    command: ["python", "-m", "app.worker"]
+    restart: unless-stopped
+    deploy:
+      replicas: 2

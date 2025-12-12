@@ -2,11 +2,13 @@
 
 ## Overview
 
-This document describes the architecture and design of the Python background processing service that handles long-running exam question generation tasks.
+This document describes the architecture and design of the Python background processing service that handles
+long-running exam question generation tasks.
 
 ## Problem Statement
 
 Current Next.js architecture has limitations:
+
 - **Blocking Operations**: Server Actions wait for entire AI generation (30s-2min), risking timeout
 - **No Real-Time Progress**: UI shows "Starting AI processing..." throughout, no intermediate updates
 - **Single-Threaded**: Next.js handles processing synchronously
@@ -167,6 +169,7 @@ Show success/error toast
 ```
 
 **Redis Keys:**
+
 - Job data: `job:{job_id}` (string, JSON serialized)
 - Main queue: `job_queue` (list, FIFO)
 - Delayed jobs: `delayed_jobs` (sorted set, scored by retry timestamp)
@@ -194,11 +197,13 @@ Show success/error toast
 **Purpose**: Persist job state across service restarts
 
 **Implementation**:
+
 - Jobs stored as JSON strings in Redis with TTL
 - Queue uses Redis LIST (RPUSH to add, BLPOP to consume)
 - Delayed jobs use Redis SORTED SET (scored by retry timestamp)
 
 **Benefits**:
+
 - Jobs survive service restarts
 - Workers can be scaled independently
 - Queue is persistent and distributed
@@ -208,12 +213,14 @@ Show success/error toast
 **Purpose**: Handle transient failures (API rate limits, network issues)
 
 **Implementation**:
+
 - 3 attempts per job (configurable)
 - Retry delays: [0s, 30s, 60s]
 - Delayed queue uses sorted set for scheduled retries
 - Worker checks delayed queue each iteration
 
 **Benefits**:
+
 - Automatic recovery from transient errors
 - Prevents overwhelming Gemini API
 - Clear failure threshold (3 attempts)
@@ -223,12 +230,14 @@ Show success/error toast
 **Purpose**: Provide user feedback during long-running operations
 
 **Implementation**:
+
 - Worker updates Firestore at each processing step
 - Progress: 0% → 10% → 20% → 30% → 40% → 90% → 100%
 - Current step descriptions for user visibility
 - Client polls Firestore every 2.5 seconds
 
 **Benefits**:
+
 - Users see actual progress, not just "processing"
 - Clear indication of where processing is stuck if it fails
 - Better UX for long-running tasks
@@ -238,11 +247,13 @@ Show success/error toast
 **Purpose**: Process multiple jobs concurrently
 
 **Implementation**:
+
 - Multiple worker processes via Docker Compose replicas
 - Each worker polls Redis queue independently
 - Workers are stateless (all state in Redis/Firestore)
 
 **Benefits**:
+
 - Horizontal scaling: docker-compose up --scale worker=8
 - Parallel processing of multiple documents
 - No coordination needed between workers
@@ -252,12 +263,14 @@ Show success/error toast
 **Purpose**: Next.js returns immediately without waiting for processing
 
 **Implementation**:
+
 - Next.js calls Python service to create job
 - Python service queues job and returns job_id
 - Total submission time: <100ms
 - Processing happens asynchronously
 
 **Benefits**:
+
 - No Server Action timeouts
 - Better Next.js performance
 - User can navigate away during processing
@@ -269,55 +282,60 @@ Show success/error toast
 ### POST /jobs/process
 
 **Request:**
+
 ```json
 {
-  "doc_id": "firestore-doc-id",
-  "system_prompt_id": "prompt-id",
-  "custom_prompt_id": "prompt-id",
-  "schema": "json-string | null"
+	"doc_id": "firestore-doc-id",
+	"system_prompt_id": "prompt-id",
+	"custom_prompt_id": "prompt-id",
+	"schema": "json-string | null"
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "job_id": "uuid-v4",
-  "message": "Job queued successfully"
+	"job_id": "uuid-v4",
+	"message": "Job queued successfully"
 }
 ```
 
 ### GET /jobs/{job_id}
 
 **Response:**
+
 ```json
 {
-  "job_id": "uuid-v4",
-  "status": "pending | processing | completed | failed",
-  "attempt": 1,
-  "max_attempts": 3,
-  "error": null,
-  "created_at": 1234567890,
-  "started_at": 1234567890,
-  "completed_at": null
+	"job_id": "uuid-v4",
+	"status": "pending | processing | completed | failed",
+	"attempt": 1,
+	"max_attempts": 3,
+	"error": null,
+	"created_at": 1234567890,
+	"started_at": 1234567890,
+	"completed_at": null
 }
 ```
 
 ### DELETE /jobs/{job_id}
 
 **Response:**
+
 ```json
 {
-  "message": "Job cancelled"
+	"message": "Job cancelled"
 }
 ```
 
 ### GET /health
 
 **Response:**
+
 ```json
 {
-  "status": "healthy",
-  "redis": "connected"
+	"status": "healthy",
+	"redis": "connected"
 }
 ```
 
@@ -347,18 +365,21 @@ processing-service/
 ### Docker Compose Services
 
 **redis**
+
 - Image: redis:7-alpine
 - Port: 6379
 - Persistence: Volume mounted for data
 - Health check: redis-cli ping
 
 **api**
+
 - Build: Local Dockerfile
 - Port: 8000
 - Command: uvicorn app.main:app
 - Volumes: Firebase credentials, PDF uploads (read-only)
 
 **worker** (replicas: 2)
+
 - Build: Local Dockerfile
 - Command: python -m app.worker
 - Volumes: Firebase credentials, PDF uploads (read-only)
@@ -387,9 +408,9 @@ WORKER_POOL_SIZE=4
 
 ```yaml
 volumes:
-  - ./credentials:/credentials:ro          # Firebase credentials
-  - ../website/uploads:/uploads:ro         # PDF files (read-only)
-  - redis_data:/data                       # Redis persistence
+  - ./credentials:/credentials:ro # Firebase credentials
+  - ../website/uploads:/uploads:ro # PDF files (read-only)
+  - redis_data:/data # Redis persistence
 ```
 
 ---
@@ -401,41 +422,42 @@ volumes:
 ```typescript
 // app/actions/documents.ts
 export async function processDocument(
-  docId: string,
-  systemPromptId: string,
-  customPromptId: string,
-  schema: string | null
+	docId: string,
+	systemPromptId: string,
+	customPromptId: string,
+	schema: string | null
 ) {
-  // 1. Update Firestore immediately
-  await db.collection("documents").doc(docId).update({
-    status: "processing",
-    currentStep: "Queuing job...",
-    progress: 0,
-  });
+	// 1. Update Firestore immediately
+	await db.collection("documents").doc(docId).update({
+		status: "processing",
+		currentStep: "Queuing job...",
+		progress: 0,
+	});
 
-  // 2. Call Python processing service
-  const response = await fetch("http://localhost:8000/jobs/process", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      doc_id: docId,
-      system_prompt_id: systemPromptId,
-      custom_prompt_id: customPromptId,
-      schema: schema,
-    }),
-  });
+	// 2. Call Python processing service
+	const response = await fetch("http://localhost:8000/jobs/process", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			doc_id: docId,
+			system_prompt_id: systemPromptId,
+			custom_prompt_id: customPromptId,
+			schema: schema,
+		}),
+	});
 
-  const { job_id } = await response.json();
+	const { job_id } = await response.json();
 
-  // 3. Return immediately (processing happens in background)
-  revalidatePath("/documents");
-  return { success: true, jobId: job_id };
+	// 3. Return immediately (processing happens in background)
+	revalidatePath("/documents");
+	return { success: true, jobId: job_id };
 }
 ```
 
 ### Client-Side Polling (No Changes)
 
 Existing polling implementation in `document-card.tsx` continues to work:
+
 - Polls Firestore every 2.5 seconds
 - Updates UI with progress/currentStep
 - Stops polling when status changes to "ready" or "failed"
@@ -446,26 +468,30 @@ Existing polling implementation in `document-card.tsx` continues to work:
 
 ### Common Errors
 
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| PDF not found | File missing, wrong path | Check volume mount |
-| Prompts not found | Invalid prompt IDs | Validate IDs before submission |
-| Gemini API error | Rate limit, quota | Retry with backoff |
-| Redis connection failed | Redis down | Check health, restart |
-| Firestore permission denied | Invalid credentials | Verify Firebase config |
+| Error                       | Cause                    | Recovery                       |
+| --------------------------- | ------------------------ | ------------------------------ |
+| PDF not found               | File missing, wrong path | Check volume mount             |
+| Prompts not found           | Invalid prompt IDs       | Validate IDs before submission |
+| Gemini API error            | Rate limit, quota        | Retry with backoff             |
+| Redis connection failed     | Redis down               | Check health, restart          |
+| Firestore permission denied | Invalid credentials      | Verify Firebase config         |
 
 ### Retry Strategy
 
 **Attempt 1**: Immediate retry (0s delay)
+
 - Handles transient network issues
 
 **Attempt 2**: 30s delay
+
 - Handles API rate limits
 
 **Attempt 3**: 60s delay
+
 - Final attempt before marking failed
 
 **After 3 attempts**: Mark job as failed
+
 - Update Firestore with error message
 - User sees failure notification
 
@@ -556,14 +582,11 @@ command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allk
 
 ## Architecture Benefits
 
-✅ **Non-Blocking**: Next.js returns immediately after queuing job
-✅ **Real-Time Progress**: Firestore updates at every processing step
-✅ **Scalable**: Multiple workers process jobs concurrently
-✅ **Resilient**: Automatic retry with exponential backoff
-✅ **Stateful**: Redis persists job state across restarts
-✅ **Isolated**: Processing failures don't affect web server
-✅ **Observable**: Comprehensive logging and monitoring
-✅ **Language-Appropriate**: Python for AI/ML workflows
+✅ **Non-Blocking**: Next.js returns immediately after queuing job ✅ **Real-Time Progress**: Firestore updates at every
+processing step ✅ **Scalable**: Multiple workers process jobs concurrently ✅ **Resilient**: Automatic retry with
+exponential backoff ✅ **Stateful**: Redis persists job state across restarts ✅ **Isolated**: Processing failures don't
+affect web server ✅ **Observable**: Comprehensive logging and monitoring ✅ **Language-Appropriate**: Python for AI/ML
+workflows
 
 ---
 

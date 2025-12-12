@@ -50,55 +50,92 @@ The frontend is a **SaaS-style Admin Dashboard**, built with React Server Compon
   - **Client:** `Zustand` for complex client-only state (e.g., active quiz session, sidebar toggle).
 
 ### UX & Theming
-- **Design Philosophy:** **"Luminous Data" & "Bento Box"**.
-  - The interface treats data as a vibrant, glowing entity. Content is organized into a modular grid of self-contained rectangular "Bento" boxes.
-  - **Dark Mode (Default):** "Neon Glassmorphism". Deep void backgrounds, glowing neon accents, and high-contrast data visualization.
-  - **Light Mode:** "Clean Frosted Glass". Soft, airy backgrounds, crisp shadows, and frosted glass panels.
+- **Design Philosophy:** **"Professional Admin Dashboard"**
+  - Clean, enterprise-grade minimalism with emphasis on data readability
+  - Balanced density with whitespace, using cards to segment information
+  - SVG grid background patterns for subtle visual interest
+  - Strong color contrast for accessibility in both light and dark modes
+  - Professional SaaS aesthetic similar to modern admin dashboards
 
 - **Design Tokens (Tailwind Config):**
   - **Colors (Dark Mode):**
-    - `bg-background`: Linear Gradient `#0F111A` -> `#1A1D2D`.
-    - `bg-card`: `#151725` (Opacity: 0.65).
-    - `border`: `#FFFFFF` (Opacity: 0.12).
-    - `text-primary`: `#FFFFFF`.
-    - `text-muted`: `#9CA3AF`.
-    - `accent`: `#3B82F6` (Electric Blue).
-    - *Glows:* Custom utility classes for `box-shadow` with `#3B82F6` & `#8B5CF6` (Opacity 0.15).
+    - `bg-background`: `#0F1117` (Solid dark gray with subtle grid SVG overlay)
+    - `bg-card`: `#1C1F26` (Clean card background)
+    - `border`: `#2E3342` (Visible borders for clear separation)
+    - `text-primary`: `#FFFFFF`
+    - `text-muted`: `#A1A7B8`
+    - `accent-primary`: `#5750F1` (Purple - primary action color)
+    - `accent-success`: `#3FD97F` (Green - positive metrics)
+    - `accent-warning`: `#FF9C55` (Orange - warnings)
+    - `accent-danger`: `#F87171` (Red - errors)
   - **Colors (Light Mode):**
-    - `bg-background`: Linear Gradient `#F0F4F8` -> `#E2E8F0`.
-    - `bg-card`: `#FFFFFF` (Opacity: 0.6).
-    - `border`: `#FFFFFF` (Opacity: 0.8).
-    - `text-primary`: `#1F2937`.
-    - `text-muted`: `#64748B`.
-    - `accent`: `#2563EB` (Royal Blue).
+    - `bg-background`: `#F9FAFB` (Light gray with subtle grid SVG overlay)
+    - `bg-card`: `#FFFFFF` (Pure white cards)
+    - `border`: `#E5E7EB` (Clear borders)
+    - `text-primary`: `#111827`
+    - `text-muted`: `#6B7280`
+    - `accent-primary`: `#5750F1` (Purple - consistent with dark)
+    - `accent-success`: `#10B981` (Green)
+    - `accent-warning`: `#F59E0B` (Orange)
+    - `accent-danger`: `#EF4444` (Red)
   - **Typography:**
-    - **Headings:** *Plus Jakarta Sans* (`font-bold`).
-    - **Body:** *Inter* (`font-normal`, `font-medium`).
-  - **Animations:**
-    - `transition-all duration-200 ease-in-out` (Hover).
-    - `animate-in fade-in duration-800 slide-in-from-bottom-4` (Entrance).
+    - **System Font Stack:** Inter or system sans-serif
+    - **Headings:** `font-semibold` to `font-bold`
+    - **Body:** `font-normal` (400) and `font-medium` (500)
+    - **Sizes:** Clear hierarchy from `text-sm` to `text-3xl`
+  - **Backgrounds:**
+    - **Subtle Gradients:** Diagonal gradients for visual depth
+    - **Light Mode:** `linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 50%, #E5E7EB 100%)`
+    - **Dark Mode:** `linear-gradient(135deg, #0F1117 0%, #1C1F26 50%, #0F1117 100%)`
+    - **Fixed Attachment:** Background stays fixed while content scrolls
   - **Component Styles:**
-    - **Glass Blur:** `backdrop-blur-xl` (approx 20px).
-    - **Card Radius:** `rounded-3xl` (24px).
-    - **Button/Input Radius:** `rounded-2xl` (16px).
-    - **Shadows:** `shadow-2xl` (custom deep blur).
+    - **Card Radius:** `rounded-[10px]` (10px - clean and modern)
+    - **Button/Input Radius:** `rounded-md` to `rounded-lg` (6-8px)
+    - **Shadows:**
+      - Light: `shadow-sm` for cards, `shadow-lg` on hover
+      - Dark: Subtle shadows or none
+    - **Hover States:**
+      - Cards: `hover:-translate-y-1 hover:shadow-lg hover:border-primary/30`
+      - Buttons: `hover:scale-105 hover:shadow-lg` with active state `active:scale-95`
+      - Menu Items: `hover:pl-3` (slide right animation)
+    - **Transitions:**
+      - Standard: `transition-all duration-300 ease-in-out`
+      - Buttons: `transition-all duration-300 ease-in-out`
+      - Menus: `transition-all duration-200`
 
 ### Layout & Components
-- **Core Layout:** **Mobile-First Admin Dashboard Shell**.
+- **Core Layout:** **Mobile-First Admin Dashboard Shell**
   - **Structure:**
-    - **Sidebar:** Collapsible (Icon-only on collapse), Glassmorphism style. Hidden on mobile (Drawer).
-    - **Header:** Sticky top navbar, minimalist.
-    - **Main Content:** Central area.
+    - **Sidebar:** Clean vertical navigation with clear sections. **Collapsible** via icon-only mode (click hamburger icon). Drawer on mobile. Uses `<Sidebar collapsible="icon">` component.
+      - Navigation items: **Documents**, **Prompts**, **Exams**
+      - Logo/Home link at top → navigates to `/`
+      - No Dashboard or History sections
+    - **Header:** Minimal top bar with SidebarTrigger button, breadcrumbs, and theme toggle.
+    - **Main Content:** Padded content area with consistent spacing.
   - **Responsiveness:**
-    - **Mobile:** Single column. Hamburger menu for sidebar.
-    - **Desktop:** Visible sidebar. Main content restricted to `max-w-7xl` (1280px) centered.
-  - **Bento Grid:**
-    - Use CSS Grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-4`) for the "box" layout.
-    - Gap: `gap-6` (24px).
-- **Components:**
-  - **Cards:** `bg-card/65 backdrop-blur-xl border border-white/10 rounded-3xl`.
-  - **Glow Effects:** `hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)]` (Tailwind arbitrary value example).
-  - **Charts:** Recharts or Visx with gradient fills (`<defs>` for SVG gradients).
+    - **Mobile:** Single column layout. Hamburger menu reveals sidebar drawer.
+    - **Tablet:** `sm:grid-cols-2` for cards
+    - **Desktop:** `xl:grid-cols-4` for dashboard widgets. Sidebar visible by default.
+    - **Large Desktop:** `2xl:gap-7.5` for increased spacing
+  - **Grid System:**
+    - Use responsive grid: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`
+    - Consistent gaps: `gap-4 md:gap-6 2xl:gap-7.5`
+    - 12-column layout support for complex dashboards (`xl:grid-cols-12`)
+- **Component Patterns:**
+  - **Cards:**
+    - Structure: `bg-card border border-border rounded-[10px] shadow-sm p-6`
+    - Hover: `hover:shadow transition-shadow duration-200`
+    - No backdrop blur or glassmorphism
+  - **Stat Cards:**
+    - Icon/metric display with clear hierarchy
+    - Percentage changes with color-coded indicators
+    - Support for trend arrows and sparklines
+  - **Tables:**
+    - Striped rows: `even:bg-gray-2 dark:even:bg-dark-2`
+    - Centered headers, right-aligned numbers
+    - Responsive with horizontal scroll
+  - **Charts:** Use Recharts with professional color schemes
+  - **Loading States:** Skeleton loaders with `animate-pulse` on neutral backgrounds
 
 ## 5. Coding Standards
 - **Naming:**
@@ -126,6 +163,8 @@ The frontend is a **SaaS-style Admin Dashboard**, built with React Server Compon
     
     components/
     ├── ui/               # Shadcn primitives
-    ├── features/         # Feature-specific components (e.g., UploadZone)
+    ├── documents/        # Document cards, upload, process dialogs
+    ├── prompts/          # Prompt cards, create/edit dialogs
+    ├── exams/            # Quiz UI, exam config
     └── layout/           # Sidebar, Header
     ```

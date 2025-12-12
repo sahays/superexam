@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Question } from "@/lib/types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
 if (!GEMINI_API_KEY) {
   console.warn("GEMINI_API_KEY is not set in environment variables.");
@@ -15,7 +16,7 @@ export async function generateQuestionsFromText(text: string, count: number = 10
     throw new Error("Gemini API Key is missing");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
   const prompt = `
     You are an expert exam generator. 
@@ -51,23 +52,41 @@ export async function generateQuestionsFromText(text: string, count: number = 10
   }
 }
 
-export async function generateQuestionsFromPDF(pdfBuffer: Buffer, schema: string): Promise<Question[]> {
+export async function generateQuestionsFromPDF(
+  pdfBuffer: Buffer,
+  systemPrompt: string,
+  customPrompt: string,
+  schema: string | null
+): Promise<Question[]> {
   if (!GEMINI_API_KEY) {
     throw new Error("Gemini API Key is missing");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+  const schemaInstruction = schema
+    ? `IMPORTANT: Generate questions following this JSON Schema structure:
+${schema}
+
+Return ONLY a valid JSON array matching the schema structure.`
+    : `IMPORTANT: Return ONLY a valid JSON array of questions with this structure:
+[
+  {
+    "text": "Question text here",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0,
+    "explanation": "Brief explanation of why this is correct"
+  }
+]`;
 
   const prompt = `
-    You are an expert exam generator.
-    Analyze the provided PDF document and generate multiple-choice questions based on the following JSON Schema.
-    
-    Adhere STRICTLY to this schema for the output. Return ONLY a valid JSON array matching the schema structure.
-    
-    Schema:
-    ${schema}
+${systemPrompt}
 
-    Ensure the output is a raw JSON array (no markdown code blocks).
+${customPrompt}
+
+${schemaInstruction}
+
+Do not include markdown code blocks or any other formatting. Return ONLY the raw JSON array.
   `;
 
   const pdfPart = {
@@ -83,12 +102,12 @@ export async function generateQuestionsFromPDF(pdfBuffer: Buffer, schema: string
     const textResponse = response.text();
 
     const jsonString = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-    const questions: any[] = JSON.parse(jsonString);
+    const questions: Omit<Question, 'id'>[] = JSON.parse(jsonString);
 
-    // Validate/Ensure ID exists if schema didn't force it
+    // Add IDs to questions
     return questions.map((q, index) => ({
       ...q,
-      id: q.id || `q-${Date.now()}-${index}`
+      id: `q-${Date.now()}-${index}`
     }));
 
   } catch (error) {

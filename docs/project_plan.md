@@ -39,7 +39,7 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 
 ---
 
-## Epic 2: Document Upload & Management
+## Epic 2: Document Upload & Management ✅ COMPLETE
 **Goal:** Simple upload workflow - upload first, process later.
 
 ### Story 2.1: Document Upload
@@ -54,77 +54,78 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 - [x] Display uploaded documents in card grid.
 - [x] Show document status badge (`uploaded`, `processing`, `ready`, `failed`).
 - [x] Show metadata (upload date, file name).
-- [ ] **Refactor:** Add "Process" button only for `uploaded` status documents.
-- [ ] **Refactor:** Show processing progress indicator on card during processing.
-- [ ] **Refactor:** Poll for status updates when document is processing.
+- [x] **Refactor:** Add "Process" button only for `uploaded` status documents.
+- [x] **Refactor:** Show processing progress indicator on card during processing.
+- [x] **Refactor:** Poll for status updates when document is processing.
+- [ ] **Enhancement:** Add info button to view document details (prompts used and generated questions).
 
 ---
 
-## Epic 3: Prompt Management
+## Epic 3: Prompt Management ✅ COMPLETE
 **Goal:** Create and manage reusable system and custom prompts.
 
 ### Story 3.1: Prompt Data Model
-- [ ] Define `SystemPrompt` interface (id, name, content, createdAt).
-- [ ] Define `CustomPrompt` interface (id, name, content, createdAt).
-- [ ] Create Firestore collections: `system-prompts`, `custom-prompts`.
-- [ ] Implement CRUD operations in `lib/db/prompts.ts`.
+- [x] Define `SystemPrompt` interface (id, name, content, createdAt).
+- [x] Define `CustomPrompt` interface (id, name, content, createdAt).
+- [x] Create Firestore collections: `system-prompts`, `custom-prompts`.
+- [x] Implement CRUD operations in `lib/db/prompts.ts`.
 
 ### Story 3.2: Prompts Page UI
-- [ ] Create `/prompts` page.
-- [ ] Implement tabs: "System Prompts" and "Custom Prompts".
-- [ ] Display prompts in card grid.
-- [ ] Implement "Create Prompt" dialog (name + content textarea).
-- [ ] Implement Edit and Delete actions.
+- [x] Create `/prompts` page.
+- [x] Implement tabs: "System Prompts" and "Custom Prompts".
+- [x] Display prompts in card grid.
+- [x] Implement "Create Prompt" dialog (name + content textarea).
+- [x] Implement Edit and Delete actions.
 
 ### Story 3.3: Prompt Server Actions
-- [ ] `createSystemPrompt(name, content)` - Server Action.
-- [ ] `updateSystemPrompt(id, data)` - Server Action.
-- [ ] `deleteSystemPrompt(id)` - Server Action.
-- [ ] `createCustomPrompt(name, content)` - Server Action.
-- [ ] `updateCustomPrompt(id, data)` - Server Action.
-- [ ] `deleteCustomPrompt(id)` - Server Action.
+- [x] `createSystemPrompt(name, content)` - Server Action.
+- [x] `updateSystemPrompt(id, data)` - Server Action.
+- [x] `deleteSystemPrompt(id)` - Server Action.
+- [x] `createCustomPrompt(name, content)` - Server Action.
+- [x] `updateCustomPrompt(id, data)` - Server Action.
+- [x] `deleteCustomPrompt(id)` - Server Action.
 
 ---
 
-## Epic 4: Document Processing with Prompts
+## Epic 4: Document Processing with Prompts ✅ COMPLETE
 **Goal:** Process uploaded documents using selected prompts via Gemini API.
 
 ### Story 4.1: Process Document Dialog
-- [ ] Create "Process Document" dialog (triggered by Process button on card).
-- [ ] **Prompt Selection Step 1:** Dropdown to select existing System Prompt OR button to create new.
-- [ ] **Prompt Selection Step 2:** Dropdown to select existing Custom Prompt OR button to create new.
-- [ ] Implement inline prompt creation within dialog.
-- [ ] Start processing on confirmation.
+- [x] Create "Process Document" dialog (triggered by Process button on card).
+- [x] **Prompt Selection Step 1:** Dropdown to select existing System Prompt OR button to create new.
+- [x] **Prompt Selection Step 2:** Dropdown to select existing Custom Prompt OR button to create new.
+- [x] Implement inline prompt creation within dialog.
+- [x] Start processing on confirmation.
 
 ### Story 4.2: Backend Processing Implementation
-- [ ] Update `processDocument` Server Action:
+- [x] Update `processDocument` Server Action:
     - Accept `docId`, `systemPromptId`, `customPromptId`.
     - Fetch prompts from Firestore.
     - Read PDF file from storage.
     - Combine: PDF + System Prompt + Custom Prompt → Gemini API.
     - Update document status to `processing` immediately.
     - Process asynchronously (or synchronously with streaming updates).
-- [ ] Update `ai.ts` service:
+- [x] Update `ai.ts` service:
     - `generateQuestionsWithPrompts(pdfBuffer, systemPrompt, customPrompt)`.
     - Send multimodal request to Gemini.
-- [ ] Save processing progress to Firestore:
+- [x] Save processing progress to Firestore:
     - Fields: `status`, `progress`, `currentStep`, `error`.
-- [ ] Update status to `ready` on success, `failed` on error.
+- [x] Update status to `ready` on success, `failed` on error.
 
 ### Story 4.3: Frontend Status Polling
-- [ ] Implement status polling in document card component.
-- [ ] Poll Firestore every 2-3 seconds while status is `processing`.
-- [ ] Update card UI with progress indicator (spinner, progress bar, current step).
-- [ ] Stop polling when status changes to `ready` or `failed`.
-- [ ] Display success/error toast notifications.
+- [x] Implement status polling in document card component.
+- [x] Poll Firestore every 2-3 seconds while status is `processing`.
+- [x] Update card UI with progress indicator (spinner, progress bar, current step).
+- [x] Stop polling when status changes to `ready` or `failed`.
+- [x] Display success/error toast notifications.
 
 ### Story 4.4: Processing Feedback UI
-- [ ] Show processing status on card:
+- [x] Show processing status on card:
     - Progress spinner.
     - Current step text (e.g., "Analyzing PDF...", "Generating questions...").
     - Progress percentage if available.
-- [ ] Update badge color based on status.
-- [ ] Disable "Process" button during processing.
+- [x] Update badge color based on status.
+- [x] Disable "Process" button during processing.
 
 ---
 
@@ -159,6 +160,26 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
     - Correct vs incorrect answers.
 - [ ] Save Exam Result to Firestore (`exam-sessions` collection).
 - [ ] Link exam session back to source document.
+
+---
+
+## Epic 8: Document Details Page
+**Goal:** Provide a detailed view of document processing inputs and outputs.
+
+### Story 8.1: Document Details Page
+- [ ] Create `/documents/[id]` dynamic route for document details.
+- [ ] Display document metadata (title, upload date, status).
+- [ ] Show processing inputs:
+    - System prompt used (name and full content).
+    - Custom prompt used (name and full content).
+    - Schema used (if applicable).
+- [ ] Display all generated questions with their answers and options.
+- [ ] Add navigation back to documents list.
+
+### Story 8.2: Info Button on Document Card
+- [ ] Add info/details icon button to document card.
+- [ ] Link to document details page (`/documents/[id]`).
+- [ ] Show button only for documents with status `ready` (processed).
 
 ---
 
@@ -215,7 +236,7 @@ This version replaces the previous Flutter/Rust architecture with a **Next.js Mo
 
 ---
 
-## Epic 7: Python Background Processing Service
+## Epic 7: Python Background Processing Service ✅ COMPLETE
 **Goal:** Decouple long-running AI processing from Next.js into a dedicated Python service for better scalability and real-time progress updates.
 
 ### Problem Statement
@@ -321,22 +342,24 @@ docker-compose up -d --scale worker=4
 **See `technical_design.md` for complete deployment configuration.**
 
 ### Story 7.5: Advanced Features
-**Optional Enhancements:**
-- [ ] **Job Queue:** Use Redis or RabbitMQ for persistent job queue
-- [ ] **Worker Scaling:** Multiple worker processes for parallel job processing
-- [ ] **Retry Logic:** Automatic retry on failures with exponential backoff
+**Core Features Implemented:**
+- [x] **Job Queue:** Redis used for persistent job queue with key prefixing
+- [x] **Worker Scaling:** Multiple worker processes for parallel job processing (scalable via docker-compose)
+- [x] **Retry Logic:** Automatic retry on failures with exponential backoff (3 attempts: 0s, 30s, 60s)
+- [x] **Real-time Progress:** Firestore updates with detailed progress (0-100%) and current step
 - [ ] **Streaming Progress:** WebSocket connection for real-time updates (instead of polling)
 - [ ] **Job Cancellation:** API endpoint to cancel running jobs
 - [ ] **Metrics & Monitoring:** Prometheus metrics, health checks, logging
 - [ ] **Rate Limiting:** Prevent overwhelming Gemini API with too many concurrent requests
 
-### Story 7.6: Migration Plan
-**Phased Rollout:**
-1. **Phase 1:** Build Python service alongside existing Next.js processing
-2. **Phase 2:** Add feature flag to toggle between Next.js and Python processing
-3. **Phase 3:** Monitor Python service performance in production
-4. **Phase 4:** Switch all traffic to Python service
-5. **Phase 5:** Remove old Next.js processing code
+### Story 7.6: Implementation Status
+**Completed:**
+- [x] **Phase 1:** Python service built with FastAPI, Redis, and worker processes
+- [x] **Phase 2:** Integrated with Next.js via HTTP API
+- [x] **Phase 3:** Firestore integration for real-time progress updates
+- [x] **Phase 4:** Delete functionality enhanced to clean up physical PDF files
+- [x] **Phase 5:** Google Cloud default credentials (gcloud auth) configured
+- [x] **Phase 6:** Relative path configuration for uploads directory
 
 ### Benefits
 - ✅ **Non-Blocking:** Next.js immediately returns, no timeout risk
