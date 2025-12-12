@@ -150,9 +150,9 @@ APIs** to parse content and extract questions. This version replaces the previou
 
 ---
 
-## Epic 5: Exam Module ✅ COMPLETE
+## Epic 5: Exam Module 🚧 IN PROGRESS
 
-**Goal:** Interactive quiz interface using processed documents with comprehensive exam management.
+**Goal:** Interactive quiz interface using processed documents with comprehensive exam management and AI-powered explanations.
 
 ### Story 5.1: Exam Configuration & Navigation
 
@@ -265,6 +265,48 @@ APIs** to parse content and extract questions. This version replaces the previou
   - Success/warning/destructive color palette
   - Smooth transitions (300ms animations)
   - Accessible contrast ratios
+
+### Story 5.7: AI-Powered Question Explanations
+
+**Goal:** Allow users to get AI-generated explanations for exam questions during or after taking exams.
+
+- [ ] **Explanation Request Interface:**
+  - Add "Ask AI" button on question cards (during exam and in results view)
+  - Prompt selection dialog (choose existing or create new prompt)
+  - Support for both system and custom prompts
+  - Inline prompt creation within dialog
+
+- [ ] **Gemini API Streaming Integration:**
+  - Send question text and answer choices to Gemini API with selected prompt
+  - Stream response in real-time to the page
+  - Display streaming content with typing indicator
+  - Handle errors and timeouts gracefully
+  - Cancel streaming on dialog close
+
+- [ ] **Response Persistence:**
+  - Save AI response to Firestore in question document
+  - Store response with metadata (promptId, timestamp, response text)
+  - Support multiple responses per question (response history)
+  - Link response to specific prompt used
+
+- [ ] **Explanation Display UI:**
+  - Show saved explanations in collapsed accordion below question
+  - Display prompt name/type used for each explanation
+  - "Query Again" button to request new explanation with different prompt
+  - Markdown rendering for formatted AI responses
+  - Timestamp showing when explanation was generated
+
+- [ ] **Server Actions & API:**
+  - `generateQuestionExplanation(questionId, promptId)` - Server Action
+  - `getQuestionExplanations(questionId)` - Fetch saved responses
+  - `streamGeminiResponse()` - Streaming API route
+  - Firestore schema updates for explanation storage
+
+- [ ] **Response Management:**
+  - View history of all explanations for a question
+  - Delete individual explanations
+  - Re-generate with same or different prompt
+  - Compare explanations from different prompts
 
 ---
 
