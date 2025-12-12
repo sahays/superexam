@@ -3,11 +3,12 @@
 import { SystemPrompt, CustomPrompt } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Edit2, Trash2, MessageSquare } from "lucide-react"
+import { Trash2, MessageSquare } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { deleteSystemPrompt, deleteCustomPrompt } from "@/app/actions/prompts"
 import { toast } from "sonner"
 import { useTransition } from "react"
+import { EditPromptDialog } from "./edit-prompt-dialog"
 
 interface PromptCardProps {
   prompt: SystemPrompt | CustomPrompt
@@ -56,10 +57,7 @@ export function PromptCard({ prompt, type }: PromptCardProps) {
       </CardContent>
 
       <CardFooter className="pt-3 border-t gap-2">
-        <Button variant="outline" size="sm" className="flex-1" disabled>
-          <Edit2 className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
+        <EditPromptDialog prompt={prompt} type={type} />
         <Button
           variant="ghost"
           size="icon-sm"

@@ -89,7 +89,8 @@ APIs** to parse content and extract questions. This version replaces the previou
 - [x] Implement tabs: "System Prompts" and "Custom Prompts".
 - [x] Display prompts in card grid.
 - [x] Implement "Create Prompt" dialog (name + content textarea).
-- [x] Implement Edit and Delete actions.
+- [x] Implement "Edit Prompt" dialog (pre-populated form).
+- [x] Implement Delete action with confirmation.
 
 ### Story 3.3: Prompt Server Actions
 
