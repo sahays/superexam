@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -46,7 +46,53 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
   const [newPromptContent, setNewPromptContent] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
+  const [displayedContent, setDisplayedContent] = useState('')
   const [isPending, startTransition] = useTransition()
+  const streamingContainerRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number | undefined>(undefined)
+
+  // Smooth character-by-character reveal animation
+  useEffect(() => {
+    if (!isGenerating) {
+      setDisplayedContent(streamingContent)
+      return
+    }
+
+    if (displayedContent.length >= streamingContent.length) {
+      return
+    }
+
+    const revealNextChars = () => {
+      setDisplayedContent(prev => {
+        const remaining = streamingContent.slice(prev.length)
+        // Reveal 2-4 characters at a time for smooth but fast streaming
+        const charsToReveal = Math.min(3, remaining.length)
+        return streamingContent.slice(0, prev.length + charsToReveal)
+      })
+
+      // Continue animation
+      animationFrameRef.current = requestAnimationFrame(revealNextChars)
+    }
+
+    // Start or continue the reveal animation with a slight delay for smoothness
+    const timeout = setTimeout(() => {
+      animationFrameRef.current = requestAnimationFrame(revealNextChars)
+    }, 16) // ~60fps
+
+    return () => {
+      clearTimeout(timeout)
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [streamingContent, displayedContent, isGenerating])
+
+  // Auto-scroll to bottom when displayed content updates
+  useEffect(() => {
+    if (isGenerating && streamingContainerRef.current) {
+      streamingContainerRef.current.scrollTop = streamingContainerRef.current.scrollHeight
+    }
+  }, [displayedContent, isGenerating])
 
   // Load prompts when dialog opens
   const handleOpenChange = async (isOpen: boolean) => {
@@ -100,6 +146,7 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
 
     setIsGenerating(true)
     setStreamingContent('')
+    setDisplayedContent('')
 
     try {
       const response = await fetch('/api/explain', {
@@ -273,10 +320,16 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Generating explanation...
               </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-md border bg-muted/30">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {streamingContent || "*Waiting for response...*"}
-                </ReactMarkdown>
+              <div
+                ref={streamingContainerRef}
+                className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-md border bg-muted/30 max-h-[400px] overflow-y-auto scroll-smooth"
+              >
+                <div className="streaming-text">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {displayedContent || "*Waiting for response...*"}
+                  </ReactMarkdown>
+                  <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />
+                </div>
               </div>
             </div>
           )}

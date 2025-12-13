@@ -66,16 +66,16 @@ export async function POST(request: NextRequest) {
     const explanationPrompt = `
 ${promptData.content}
 
-Please provide a detailed explanation for the following question and its answer choices:
-
-Question: ${question.text}
+Question: ${question.questionText}
 
 Options:
-${question.options.map((opt: string, idx: number) => `${String.fromCharCode(65 + idx)}. ${opt}`).join('\n')}
+${question.choices.map((choice: import("@/lib/types").QuestionChoice, idx: number) => `${typeof choice.index === 'string' ? choice.index : String.fromCharCode(65 + idx)}. ${choice.text}`).join('\n')}
 
-Correct Answer: ${String.fromCharCode(65 + question.correctAnswer)}. ${question.options[question.correctAnswer]}
-
-Provide a clear, educational explanation that helps the student understand why the correct answer is right and why the other options are incorrect.
+Correct Answer(s): ${question.correctAnswers.map((ans: string | number) => {
+  const choiceIdx = question.choices.findIndex((c: import("@/lib/types").QuestionChoice) => c.index === ans);
+  const choice = question.choices[choiceIdx];
+  return `${typeof choice.index === 'string' ? choice.index : String.fromCharCode(65 + choiceIdx)}. ${choice.text}`;
+}).join(', ')}
     `;
 
     // Initialize Gemini model for streaming

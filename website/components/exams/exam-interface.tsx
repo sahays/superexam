@@ -13,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
+import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft, Copy, FileText, Eye } from "lucide-react"
 import { useExamStore } from "@/lib/stores/exam-store"
 import { updateExamAnswer, submitExam } from "@/app/actions/exams"
 import { toast } from "sonner"
@@ -50,6 +50,7 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
   const [showResults, setShowResults] = useState(isCompleted)
   const [localAnswers, setLocalAnswers] = useState<Record<string, number>>(session.answers || {})
   const [questionExplanations, setQuestionExplanations] = useState<Record<string, QuestionExplanation>>({})
+  const [showMarkdown, setShowMarkdown] = useState<Record<string, boolean>>({})
 
   // Initialize total questions
   useEffect(() => {
@@ -131,6 +132,19 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
   const answeredCount = Object.keys(localAnswers).length
   const isAnswered = localAnswers[currentQuestion?.id] !== undefined
 
+  const handleCopyExplanation = (explanation: QuestionExplanation | string) => {
+    const content = typeof explanation === 'string' ? explanation : explanation.content
+    navigator.clipboard.writeText(content)
+    toast.success("Explanation copied to clipboard")
+  }
+
+  const toggleMarkdownView = (questionId: string) => {
+    setShowMarkdown(prev => ({
+      ...prev,
+      [questionId]: !prev[questionId]
+    }))
+  }
+
   // Results view
   if (showResults && session.score !== null) {
     const percentage = session.score
@@ -177,7 +191,7 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
 
           {questions.map((question, index) => {
             const userAnswer = localAnswers[question.id]
-            const isCorrect = userAnswer === question.correctAnswer
+            const isCorrect = question.correctAnswers?.includes(userAnswer)
 
             return (
               <Card key={question.id}>
@@ -198,16 +212,16 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="font-medium">{question.text}</p>
+                  <p className="font-medium">{question.questionText}</p>
 
                   <div className="space-y-2">
-                    {question.options?.map((option: string, optionIndex: number) => {
-                      const isCorrectAnswer = optionIndex === question.correctAnswer
-                      const isUserAnswer = optionIndex === userAnswer
+                    {question.choices?.map((choice: import("@/lib/types").QuestionChoice, choiceIndex: number) => {
+                      const isCorrectAnswer = question.correctAnswers?.includes(choice.index)
+                      const isUserAnswer = userAnswer === choiceIndex
 
                       return (
                         <div
-                          key={optionIndex}
+                          key={choiceIndex}
                           className={`p-3 rounded-md border ${
                             isCorrectAnswer
                               ? 'bg-success/10 border-success/20 text-success'
@@ -218,9 +232,9 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                         >
                           <div className="flex items-start gap-2">
                             <span className="font-medium shrink-0">
-                              {String.fromCharCode(65 + optionIndex)}.
+                              {typeof choice.index === 'string' ? choice.index : String.fromCharCode(65 + choiceIndex)}.
                             </span>
-                            <span className="flex-1">{option}</span>
+                            <span className="flex-1">{choice.text}</span>
                             {isCorrectAnswer && <CheckCircle2 className="h-4 w-4 shrink-0" />}
                             {isUserAnswer && !isCorrectAnswer && <XCircle className="h-4 w-4 shrink-0" />}
                           </div>
@@ -252,25 +266,49 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4">
                             <div className="space-y-3">
-                              <div className="text-xs text-muted-foreground">
-                                {(() => {
-                                  const explanation = questionExplanations[question.id] || question.explanation
-                                  if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
-                                    return (
-                                      <>
-                                        Generated with <span className="font-medium">{explanation.promptName}</span>
-                                        {' '}({explanation.promptType})
-                                        {explanation.generatedAt && (
-                                          <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
-                                        )}
-                                      </>
-                                    )
-                                  }
-                                  return null
-                                })()}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs text-muted-foreground">
+                                  {(() => {
+                                    const explanation = questionExplanations[question.id] || question.explanation
+                                    if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
+                                      return (
+                                        <>
+                                          Generated with <span className="font-medium">{explanation.promptName}</span>
+                                          {' '}({explanation.promptType})
+                                          {explanation.generatedAt && (
+                                            <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
+                                          )}
+                                        </>
+                                      )
+                                    }
+                                    return null
+                                  })()}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleMarkdownView(question.id)}
+                                    className="h-7 px-2"
+                                  >
+                                    {showMarkdown[question.id] ? (
+                                      <><Eye className="h-3 w-3 mr-1" /> Formatted</>
+                                    ) : (
+                                      <><FileText className="h-3 w-3 mr-1" /> Markdown</>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleCopyExplanation(questionExplanations[question.id] || question.explanation)}
+                                    className="h-7 px-2"
+                                  >
+                                    <Copy className="h-3 w-3 mr-1" /> Copy
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {showMarkdown[question.id] ? (
+                                <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
                                   {(() => {
                                     const explanation = questionExplanations[question.id] || question.explanation
                                     if (typeof explanation === 'string') {
@@ -280,8 +318,22 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                                     }
                                     return ''
                                   })()}
-                                </ReactMarkdown>
-                              </div>
+                                </pre>
+                              ) : (
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {(() => {
+                                      const explanation = questionExplanations[question.id] || question.explanation
+                                      if (typeof explanation === 'string') {
+                                        return explanation
+                                      } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
+                                        return explanation.content
+                                      }
+                                      return ''
+                                    })()}
+                                  </ReactMarkdown>
+                                </div>
+                              )}
                             </div>
                           </AccordionContent>
                         </AccordionItem>
@@ -350,10 +402,10 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
       {/* Question Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">{currentQuestion.text}</CardTitle>
+          <CardTitle className="text-xl">{currentQuestion.questionText}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {currentQuestion.options?.map((option: string, index: number) => {
+          {currentQuestion.choices?.map((choice: import("@/lib/types").QuestionChoice, index: number) => {
             const isSelected = localAnswers[currentQuestion.id] === index
 
             return (
@@ -370,9 +422,9 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                   <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
                     isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
                   }`}>
-                    {isSelected ? <CheckCircle2 className="h-4 w-4" /> : String.fromCharCode(65 + index)}
+                    {isSelected ? <CheckCircle2 className="h-4 w-4" /> : (typeof choice.index === 'string' ? choice.index : String.fromCharCode(65 + index))}
                   </div>
-                  <span className="flex-1">{option}</span>
+                  <span className="flex-1">{choice.text}</span>
                 </div>
               </button>
             )
@@ -401,25 +453,49 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
                     <div className="space-y-3">
-                      <div className="text-xs text-muted-foreground">
-                        {(() => {
-                          const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
-                          if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
-                            return (
-                              <>
-                                Generated with <span className="font-medium">{explanation.promptName}</span>
-                                {' '}({explanation.promptType})
-                                {explanation.generatedAt && (
-                                  <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
-                                )}
-                              </>
-                            )
-                          }
-                          return null
-                        })()}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-muted-foreground">
+                          {(() => {
+                            const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
+                            if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
+                              return (
+                                <>
+                                  Generated with <span className="font-medium">{explanation.promptName}</span>
+                                  {' '}({explanation.promptType})
+                                  {explanation.generatedAt && (
+                                    <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
+                                  )}
+                                </>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleMarkdownView(currentQuestion.id)}
+                            className="h-7 px-2"
+                          >
+                            {showMarkdown[currentQuestion.id] ? (
+                              <><Eye className="h-3 w-3 mr-1" /> Formatted</>
+                            ) : (
+                              <><FileText className="h-3 w-3 mr-1" /> Markdown</>
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyExplanation(questionExplanations[currentQuestion.id] || currentQuestion.explanation)}
+                            className="h-7 px-2"
+                          >
+                            <Copy className="h-3 w-3 mr-1" /> Copy
+                          </Button>
+                        </div>
                       </div>
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {showMarkdown[currentQuestion.id] ? (
+                        <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
                           {(() => {
                             const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
                             if (typeof explanation === 'string') {
@@ -429,8 +505,22 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                             }
                             return ''
                           })()}
-                        </ReactMarkdown>
-                      </div>
+                        </pre>
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {(() => {
+                              const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
+                              if (typeof explanation === 'string') {
+                                return explanation
+                              } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
+                                return explanation.content
+                              }
+                              return ''
+                            })()}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>

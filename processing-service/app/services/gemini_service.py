@@ -19,32 +19,18 @@ class GeminiService:
     ) -> list[dict]:
         """Generate exam questions from PDF using Gemini API"""
 
-        # Build schema instruction based on whether schema is provided
-        if schema:
-            schema_instruction = f"""IMPORTANT: Generate questions following this JSON Schema structure:
-{schema}
-
-Return ONLY a valid JSON array matching the schema structure."""
-        else:
-            schema_instruction = """IMPORTANT: Return ONLY a valid JSON array of questions with this structure:
-[
-  {
-    "text": "Question text here",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 0,
-    "explanation": "Brief explanation of why this is correct"
-  }
-]"""
-
-        # Combine all prompts
+        # Combine prompts and schema
         prompt = f"""
 {system_prompt}
 
 {custom_prompt}
+"""
 
-{schema_instruction}
+        if schema:
+            prompt += f"""
 
-Do not include markdown code blocks or any other formatting. Return ONLY the raw JSON array.
+Schema:
+{schema}
 """
 
         # Prepare PDF part for multimodal input

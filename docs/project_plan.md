@@ -150,7 +150,7 @@ APIs** to parse content and extract questions. This version replaces the previou
 
 ---
 
-## Epic 5: Exam Module 🚧 IN PROGRESS
+## Epic 5: Exam Module ✅ COMPLETE
 
 **Goal:** Interactive quiz interface using processed documents with comprehensive exam management and AI-powered explanations.
 
@@ -266,40 +266,48 @@ APIs** to parse content and extract questions. This version replaces the previou
   - Smooth transitions (300ms animations)
   - Accessible contrast ratios
 
-### Story 5.7: AI-Powered Question Explanations
+### Story 5.7: AI-Powered Question Explanations ✅ COMPLETE
 
 **Goal:** Allow users to get AI-generated explanations for exam questions. New responses overwrite previous ones.
 
-- [ ] **Explanation Request Interface:**
-  - Add "Ask AI" button on question cards (in results view)
+- [x] **Explanation Request Interface:**
+  - Add "Ask AI" button on question cards (both active exam and results view)
   - Prompt selection dialog (choose existing or create new prompt)
   - Support for both system and custom prompts
   - Inline prompt creation within dialog
+  - Tabs for switching between system and custom prompts
 
-- [ ] **Gemini API Streaming Integration:**
+- [x] **Gemini API Streaming Integration:**
   - Send question text and answer choices to Gemini API with selected prompt
-  - Stream response in real-time to the page
-  - Display streaming content with typing indicator
+  - Stream response in real-time to the page using Server-Sent Events (SSE)
+  - Display streaming content with smooth character-by-character animation
+  - Typing cursor animation during streaming
   - Handle errors and timeouts gracefully
-  - Update UI in real-time as tokens arrive
+  - Update UI in real-time as tokens arrive with smooth transitions
+  - Auto-scroll to bottom during streaming
 
-- [ ] **Response Persistence:**
+- [x] **Response Persistence:**
   - Save AI response to Firestore in question document
-  - Store as `explanation` field with metadata (promptId, promptName, timestamp)
+  - Store as `explanation` field with metadata (promptId, promptName, promptType, generatedAt)
   - New responses overwrite previous explanation (no history)
   - Update both page and database on new query
+  - Persist explanation across page refreshes
 
-- [ ] **Explanation Display UI:**
+- [x] **Explanation Display UI:**
   - Show explanation in collapsed accordion below question
-  - Display prompt name used and generation timestamp
-  - "Ask AI Again" button to regenerate with different prompt
-  - Markdown rendering for formatted AI responses
-  - Loading state during streaming
+  - Display prompt name used and generation timestamp (relative time)
+  - "Ask AI" button to regenerate with different prompt
+  - Markdown rendering with proper styling (bold headings, lists, code blocks)
+  - Markdown/Formatted toggle to switch between raw and rendered view
+  - Copy button to copy explanation to clipboard
+  - Loading state with spinner during streaming
+  - Smooth fade-in animations for new content
 
-- [ ] **Server Actions & API:**
-  - `generateQuestionExplanation(documentId, questionId, promptId, promptType)` - Streaming route
+- [x] **Server Actions & API:**
+  - `/api/explain` POST route - Streaming SSE endpoint
   - Update question document with explanation field
   - Firestore schema: `explanation: { content, promptId, promptName, promptType, generatedAt }`
+  - Proper error handling and streaming cleanup
 
 ---
 

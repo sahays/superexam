@@ -6,11 +6,17 @@ export interface QuestionExplanation {
   generatedAt: number;
 }
 
+export interface QuestionChoice {
+  index: string | number;
+  text: string;
+}
+
 export interface Question {
   id: string;
-  text: string;
-  options: string[];
-  correctAnswer: number; // Index of the correct option (0-3)
+  questionText: string;
+  type?: 'single_select' | 'multi_select';
+  choices: QuestionChoice[];
+  correctAnswers: (string | number)[]; // Array of correct choice indices
   explanation?: QuestionExplanation;
 }
 

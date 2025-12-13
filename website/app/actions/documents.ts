@@ -7,6 +7,58 @@ import { writeFile, readFile } from "fs/promises";
 import { join } from "path";
 import { generateQuestionsFromPDF } from "@/lib/services/ai";
 
+// Default JSON Schema for QA extraction
+const DEFAULT_QA_SCHEMA = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/schemas/qa-item-simplified.json",
+  "title": "QA Item (Simplified)",
+  "type": "object",
+  "required": [
+    "questionText",
+    "choices",
+    "correctAnswers"
+  ],
+  "properties": {
+    "questionText": {
+      "type": "string",
+      "description": "The actual text of the question."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["single_select", "multi_select"],
+      "default": "single_select",
+      "description": "Defines if the user can pick one or multiple answers."
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["index", "text"],
+        "properties": {
+          "index": {
+            "type": ["string", "integer"],
+            "description": "Identifier for the choice (e.g., 'A', 1)."
+          },
+          "text": {
+            "type": "string",
+            "description": "The display text for the choice."
+          }
+        }
+      }
+    },
+    "correctAnswers": {
+      "type": "array",
+      "description": "Array containing the 'index' values of the correct choices.",
+      "minItems": 1,
+      "items": {
+        "type": ["string", "integer"]
+      },
+      "uniqueItems": true
+    }
+  }
+};
+
 export async function uploadDocument(formData: FormData) {
   try {
     const file = formData.get('file') as File;
@@ -60,7 +112,7 @@ export async function uploadDocument(formData: FormData) {
   }
 }
 
-export async function processDocument(docId: string, systemPromptId: string, customPromptId: string, schema: string | null) {
+export async function processDocument(docId: string, systemPromptId: string, customPromptId: string) {
   try {
     // 1. Verify document exists
     const docRef = db.collection('documents').doc(docId);
@@ -103,7 +155,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
         doc_id: docId,
         system_prompt_id: systemPromptId,
         custom_prompt_id: customPromptId,
-        schema: schema
+        schema: JSON.stringify(DEFAULT_QA_SCHEMA)
       })
     });
 

@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Bot, Loader2, Plus, MessageSquare, Upload, X, FileJson, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bot, Loader2, Plus, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -58,10 +57,6 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
   const [newCustomPromptName, setNewCustomPromptName] = useState("")
   const [newCustomPromptContent, setNewCustomPromptContent] = useState("")
 
-  // Schema fields
-  const [schemaFile, setSchemaFile] = useState<File | null>(null)
-  const [schemaContent, setSchemaContent] = useState<string>("")
-  const [schemaError, setSchemaError] = useState<string | null>(null)
 
   // Load prompts when dialog opens
   useEffect(() => {
@@ -88,50 +83,6 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
     }
   }
 
-  const validateJSON = (jsonString: string): boolean => {
-    try {
-      JSON.parse(jsonString)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  const onSchemaDrop = useCallback(async (acceptedFiles: File[]) => {
-    setSchemaError(null)
-
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0]
-
-      try {
-        const text = await file.text()
-
-        if (!validateJSON(text)) {
-          const errorMsg = "Invalid JSON format. Please upload a valid JSON schema file."
-          setSchemaError(errorMsg)
-          toast.error(errorMsg)
-          return
-        }
-
-        setSchemaFile(file)
-        setSchemaContent(text)
-        toast.success("Schema loaded successfully")
-      } catch (error) {
-        const errorMsg = "Failed to read schema file"
-        setSchemaError(errorMsg)
-        toast.error(errorMsg)
-      }
-    }
-  }, [])
-
-  const { getRootProps: getSchemaRootProps, getInputProps: getSchemaInputProps, isDragActive: isSchemaDragActive } = useDropzone({
-    onDrop: onSchemaDrop,
-    accept: {
-      'application/json': ['.json']
-    },
-    maxFiles: 1,
-    multiple: false,
-  })
 
   const handleCreateSystemPrompt = async () => {
     if (!newSystemPromptName.trim() || !newSystemPromptContent.trim()) {
@@ -187,16 +138,10 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
       return
     }
 
-    // Validate schema if provided
-    if (schemaContent && !validateJSON(schemaContent)) {
-      toast.error("Invalid JSON schema")
-      return
-    }
-
     setIsProcessing(true)
 
     try {
-      const result = await processDocument(docId, selectedSystemPrompt, selectedCustomPrompt, schemaContent || null)
+      const result = await processDocument(docId, selectedSystemPrompt, selectedCustomPrompt)
 
       if (result.error) {
         toast.error(result.error)
@@ -205,8 +150,6 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
         setOpen(false)
         setSelectedSystemPrompt("")
         setSelectedCustomPrompt("")
-        setSchemaFile(null)
-        setSchemaContent("")
         router.refresh()
       }
     } catch (error) {
@@ -224,9 +167,6 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
     setNewSystemPromptContent("")
     setNewCustomPromptName("")
     setNewCustomPromptContent("")
-    setSchemaFile(null)
-    setSchemaContent("")
-    setSchemaError(null)
   }
 
   return (
@@ -398,75 +338,6 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
               )}
             </div>
 
-            {/* JSON Schema Section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="schema" className="text-base font-semibold">
-                  JSON Schema <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
-                </Label>
-              </div>
-
-              {schemaError && (
-                <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <p className="flex-1">{schemaError}</p>
-                  <button
-                    onClick={() => setSchemaError(null)}
-                    className="text-destructive/70 hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-
-              {!schemaFile ? (
-                <div
-                  {...getSchemaRootProps()}
-                  className={`
-                    border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-                    ${isSchemaDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
-                  `}
-                >
-                  <input {...getSchemaInputProps()} />
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Upload className="h-6 w-6" />
-                    {isSchemaDragActive ? (
-                      <p className="text-sm">Drop the JSON schema here...</p>
-                    ) : (
-                      <p className="text-sm">Drag & drop JSON schema, or click to select</p>
-                    )}
-                    <span className="text-xs">Defines the output structure for generated questions</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="p-2 bg-background rounded border">
-                      <FileJson className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-medium truncate max-w-[300px]">{schemaFile.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {(schemaFile.size / 1024).toFixed(2)} KB
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSchemaFile(null)
-                      setSchemaContent("")
-                      setSchemaError(null)
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
