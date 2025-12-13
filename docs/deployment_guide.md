@@ -77,8 +77,8 @@ We will build two images: one for the Python backend (shared by API and Worker) 
 ### A. Python Service (API + Worker)
 
 ```bash
-# Build (using host network to avoid DNS issues)
-sudo docker build --network=host -t $API_IMAGE ./processing-service
+# Build (using host network to avoid DNS issues, and amd64 for Cloud Run compatibility)
+sudo docker build --platform linux/amd64 --network=host -t $API_IMAGE ./processing-service
 
 # Push
 sudo docker push $API_IMAGE
@@ -92,7 +92,7 @@ sudo docker push $API_IMAGE
 
 ```bash
 # Build
-sudo docker build --network=host -t $WEBSITE_IMAGE ./website
+sudo docker build --platform linux/amd64 --network=host -t $WEBSITE_IMAGE ./website
 
 # Push
 sudo docker push $WEBSITE_IMAGE
