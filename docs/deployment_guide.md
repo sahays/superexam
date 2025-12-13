@@ -12,17 +12,22 @@ This guide details the commands to build and deploy the SuperExam services to Go
 
 ## 1. Setup Environment Variables
 
-Copy and paste these into your terminal (adjust values as needed):
+Copy and paste these into your terminal (adjust values as needed). 
+**Note:** Ensure you are in the project root directory.
 
 ```bash
-# Project Configuration
-export PROJECT_ID="your-project-id"
-export REGION="us-central1"
-export REPO_NAME="superexam-repo"  # Artifact Registry Repo Name
+# Source variables from .env if available
+source .env
 
-# Infrastructure Config (You must create these first)
-export GCS_BUCKET_NAME="superexam-uploads-prod"
-export REDIS_HOST="10.0.0.5"       # IP of your Memorystore instance
+# Or manually export them:
+# Project Configuration
+export PROJECT_ID="your-project-id" # e.g., random-poc-479104
+export REGION="asia-south1"
+export REPO_NAME="superexam-repo"
+
+# Infrastructure Config
+export GCS_BUCKET_NAME="superexam-uploads"
+export REDIS_HOST="10.x.x.x"       # IP of your Memorystore instance
 export REDIS_PORT="6379"
 
 # Secrets
@@ -34,26 +39,66 @@ export API_IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/api:$IMAGE_TAG"
 export WEBSITE_IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/website:$IMAGE_TAG"
 ```
 
-## 2. Build and Push Images
+## 2. Authentication & Setup
+
+Ensure you are authenticated with an account that has **Artifact Registry Administrator** permissions.
+
+```bash
+# 1. Login to gcloud (if not already logged in)
+gcloud auth login --update-adc
+
+# 2. Set the project
+gcloud config set project $PROJECT_ID
+
+# 3. Create Artifact Registry Repository (if it doesn't exist)
+gcloud artifacts repositories create $REPO_NAME \
+    --repository-format=docker \
+    --location=$REGION \
+    --description="SuperExam Repository" \
+    --project=$PROJECT_ID
+
+# 4. Authenticate Docker (Choose ONE method)
+
+# Method A: Standard (if running docker without sudo)
+gcloud auth configure-docker $REGION-docker.pkg.dev
+
+# Method B: Root/Sudo (if running docker with sudo)
+gcloud auth print-access-token | sudo docker login -u oauth2accesstoken --password-stdin https://$REGION-docker.pkg.dev
+```
+
+## 3. Build and Push Images
 
 We will build two images: one for the Python backend (shared by API and Worker) and one for the Next.js frontend.
 
+**Troubleshooting:**
+*   **DNS Issues:** If `pip install` or `npm install` fails with network errors, add `--network=host` to the build command.
+*   **Architecture:** If building on ARM (M1/M2/M3 Mac) for Cloud Run (x86), add `--platform linux/amd64`.
+
+### A. Python Service (API + Worker)
+
 ```bash
-# Configure Docker to use gcloud credentials
-gcloud auth configure-docker $REGION-docker.pkg.dev
+# Build (using host network to avoid DNS issues)
+sudo docker build --network=host -t $API_IMAGE ./processing-service
 
-# 1. Build & Push Python Service (API + Worker)
-# Run from project root
-docker build --platform linux/amd64 -t $API_IMAGE ./processing-service
-docker push $API_IMAGE
-
-# 2. Build & Push Website
-# Run from project root
-docker build --platform linux/amd64 -t $WEBSITE_IMAGE ./website
-docker push $WEBSITE_IMAGE
+# Push
+sudo docker push $API_IMAGE
 ```
 
-## 3. Deploy Services
+### B. Website (Next.js)
+
+**Requirements:**
+*   `website/next.config.ts` must include `output: 'standalone'`.
+*   `website/Dockerfile` must use Node 20+ (e.g., `FROM node:22-alpine`).
+
+```bash
+# Build
+sudo docker build --network=host -t $WEBSITE_IMAGE ./website
+
+# Push
+sudo docker push $WEBSITE_IMAGE
+```
+
+## 4. Deploy Services
 
 We deploy in this order: API -> Worker -> Website (since Website needs API URL).
 
@@ -109,7 +154,7 @@ gcloud run deploy superexam-website \
   --set-env-vars "PROCESSING_SERVICE_URL=$PROCESSING_SERVICE_URL,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,GEMINI_API_KEY=$GEMINI_API_KEY"
 ```
 
-## 4. Verification
+## 5. Verification
 
 1.  Visit the **Website URL** provided by the final deployment command.
 2.  Upload a document. It should save to your **GCS Bucket**.
