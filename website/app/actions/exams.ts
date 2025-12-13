@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/lib/db/firebase";
+import { db, collection } from "@/lib/db/firebase";
 import { revalidatePath } from "next/cache";
 
 interface CreateExamSessionParams {
@@ -16,7 +16,7 @@ export async function createExamSession(params: CreateExamSessionParams) {
     const { documentId, questionCount, timerEnabled, timerMinutes, randomize } = params;
 
     // Get document
-    const docRef = db.collection('documents').doc(documentId);
+    const docRef = db.collection(collection('documents')).doc(documentId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
@@ -43,7 +43,7 @@ export async function createExamSession(params: CreateExamSessionParams) {
     }
 
     // Create exam session
-    const sessionRef = db.collection('exam-sessions').doc();
+    const sessionRef = db.collection(collection('exam-sessions')).doc();
     const now = Date.now();
 
     const session = {
@@ -70,7 +70,7 @@ export async function createExamSession(params: CreateExamSessionParams) {
 
 export async function getExamSession(sessionId: string) {
   try {
-    const sessionRef = db.collection('exam-sessions').doc(sessionId);
+    const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
     const sessionSnap = await sessionRef.get();
 
     if (!sessionSnap.exists) {
@@ -97,7 +97,7 @@ export async function getExamSession(sessionId: string) {
 
 export async function updateExamAnswer(sessionId: string, questionId: string, answer: number) {
   try {
-    const sessionRef = db.collection('exam-sessions').doc(sessionId);
+    const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
 
     await sessionRef.update({
       [`answers.${questionId}`]: answer
@@ -112,7 +112,7 @@ export async function updateExamAnswer(sessionId: string, questionId: string, an
 
 export async function submitExam(sessionId: string) {
   try {
-    const sessionRef = db.collection('exam-sessions').doc(sessionId);
+    const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
     const sessionSnap = await sessionRef.get();
 
     if (!sessionSnap.exists) {
@@ -122,7 +122,7 @@ export async function submitExam(sessionId: string) {
     const session = sessionSnap.data() as any;
 
     // Get document questions
-    const docRef = db.collection('documents').doc(session.documentId);
+    const docRef = db.collection(collection('documents')).doc(session.documentId);
     const questionsSnapshot = await docRef.collection('questions').get();
     const questionsMap = new Map(
       questionsSnapshot.docs.map(doc => [doc.id, doc.data()])
@@ -167,7 +167,7 @@ export async function submitExam(sessionId: string) {
 
 export async function getExamQuestions(documentId: string, questionIds: string[]) {
   try {
-    const docRef = db.collection('documents').doc(documentId);
+    const docRef = db.collection(collection('documents')).doc(documentId);
     const questions = [];
 
     for (const questionId of questionIds) {
@@ -189,7 +189,7 @@ export async function getExamQuestions(documentId: string, questionIds: string[]
 
 export async function getExamSessions() {
   try {
-    const sessionsSnapshot = await db.collection('exam-sessions')
+    const sessionsSnapshot = await db.collection(collection('exam-sessions'))
       .orderBy('startedAt', 'desc')
       .get();
 
@@ -213,7 +213,7 @@ export async function getExamSessions() {
 
     // Fetch document titles
     const sessionsWithDocs = await Promise.all(sessions.map(async (session) => {
-      const docSnap = await db.collection('documents').doc(session.documentId).get();
+      const docSnap = await db.collection(collection('documents')).doc(session.documentId).get();
       const docData = docSnap.data();
 
       return {

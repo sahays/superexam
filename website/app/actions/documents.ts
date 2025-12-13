@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/lib/db/firebase";
+import { db, collection } from "@/lib/db/firebase";
 import { Document, Question } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { writeFile, readFile } from "fs/promises";
@@ -88,7 +88,7 @@ export async function uploadDocument(formData: FormData) {
     await writeFile(filePath, buffer);
 
     // 2. Create Document Record
-    const docRef = db.collection('documents').doc();
+    const docRef = db.collection(collection('documents')).doc();
     const docId = docRef.id;
     const now = Date.now();
 
@@ -115,7 +115,7 @@ export async function uploadDocument(formData: FormData) {
 export async function processDocument(docId: string, systemPromptId: string, customPromptId: string) {
   try {
     // 1. Verify document exists
-    const docRef = db.collection('documents').doc(docId);
+    const docRef = db.collection(collection('documents')).doc(docId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
@@ -129,8 +129,8 @@ export async function processDocument(docId: string, systemPromptId: string, cus
 
     // 2. Verify prompts exist
     const [systemPromptSnap, customPromptSnap] = await Promise.all([
-      db.collection('system-prompts').doc(systemPromptId).get(),
-      db.collection('custom-prompts').doc(customPromptId).get()
+      db.collection(collection('system-prompts')).doc(systemPromptId).get(),
+      db.collection(collection('custom-prompts')).doc(customPromptId).get()
     ]);
 
     if (!systemPromptSnap.exists || !customPromptSnap.exists) {
@@ -176,7 +176,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
 
     // Update status to failed
     try {
-      await db.collection('documents').doc(docId).update({
+      await db.collection(collection('documents')).doc(docId).update({
         status: 'failed',
         error: 'Failed to start processing',
         currentStep: undefined,
@@ -193,7 +193,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
 
 export async function getDocumentStatus(docId: string) {
   try {
-    const docRef = db.collection('documents').doc(docId);
+    const docRef = db.collection(collection('documents')).doc(docId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
@@ -220,7 +220,7 @@ export async function getDocumentStatus(docId: string) {
 export async function deleteDocument(docId: string) {
   try {
     // 1. Get document to find file path
-    const docRef = db.collection('documents').doc(docId);
+    const docRef = db.collection(collection('documents')).doc(docId);
     const docSnap = await docRef.get();
 
     if (docSnap.exists) {
@@ -261,7 +261,7 @@ export async function deleteDocument(docId: string) {
 
 export async function getDocumentDetails(docId: string) {
   try {
-    const docRef = db.collection('documents').doc(docId);
+    const docRef = db.collection(collection('documents')).doc(docId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
@@ -281,7 +281,7 @@ export async function getDocumentDetails(docId: string) {
     let customPrompt = null;
 
     if (document.systemPromptId) {
-      const systemPromptSnap = await db.collection('system-prompts').doc(document.systemPromptId).get();
+      const systemPromptSnap = await db.collection(collection('system-prompts')).doc(document.systemPromptId).get();
       if (systemPromptSnap.exists) {
         const promptData = systemPromptSnap.data() as any;
         systemPrompt = {
@@ -294,7 +294,7 @@ export async function getDocumentDetails(docId: string) {
     }
 
     if (document.customPromptId) {
-      const customPromptSnap = await db.collection('custom-prompts').doc(document.customPromptId).get();
+      const customPromptSnap = await db.collection(collection('custom-prompts')).doc(document.customPromptId).get();
       if (customPromptSnap.exists) {
         const promptData = customPromptSnap.data() as any;
         customPrompt = {

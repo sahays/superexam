@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from "@/lib/db/firebase";
+import { db, collection } from "@/lib/db/firebase";
 import { SystemPrompt, CustomPrompt } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 
@@ -8,8 +8,8 @@ import { revalidatePath } from "next/cache";
 export async function getAllPrompts() {
   try {
     const [systemSnapshot, customSnapshot] = await Promise.all([
-      db.collection('system-prompts').orderBy('createdAt', 'desc').get(),
-      db.collection('custom-prompts').orderBy('createdAt', 'desc').get()
+      db.collection(collection('system-prompts')).orderBy('createdAt', 'desc').get(),
+      db.collection(collection('custom-prompts')).orderBy('createdAt', 'desc').get()
     ]);
 
     const systemPrompts: SystemPrompt[] = systemSnapshot.docs.map(doc => ({
@@ -36,7 +36,7 @@ export async function createSystemPrompt(name: string, content: string) {
       return { error: 'Name and content are required' };
     }
 
-    const docRef = db.collection('system-prompts').doc();
+    const docRef = db.collection(collection('system-prompts')).doc();
     const now = Date.now();
 
     const newPrompt: SystemPrompt = {
@@ -63,7 +63,7 @@ export async function updateSystemPrompt(id: string, data: { name?: string; cont
       return { error: 'ID is required' };
     }
 
-    const docRef = db.collection('system-prompts').doc(id);
+    const docRef = db.collection(collection('system-prompts')).doc(id);
     const updateData = {
       ...data,
       updatedAt: Date.now(),
@@ -85,7 +85,7 @@ export async function deleteSystemPrompt(id: string) {
       return { error: 'ID is required' };
     }
 
-    await db.collection('system-prompts').doc(id).delete();
+    await db.collection(collection('system-prompts')).doc(id).delete();
 
     revalidatePath('/prompts');
     return { success: true };
@@ -102,7 +102,7 @@ export async function createCustomPrompt(name: string, content: string) {
       return { error: 'Name and content are required' };
     }
 
-    const docRef = db.collection('custom-prompts').doc();
+    const docRef = db.collection(collection('custom-prompts')).doc();
     const now = Date.now();
 
     const newPrompt: CustomPrompt = {
@@ -129,7 +129,7 @@ export async function updateCustomPrompt(id: string, data: { name?: string; cont
       return { error: 'ID is required' };
     }
 
-    const docRef = db.collection('custom-prompts').doc(id);
+    const docRef = db.collection(collection('custom-prompts')).doc(id);
     const updateData = {
       ...data,
       updatedAt: Date.now(),
@@ -151,7 +151,7 @@ export async function deleteCustomPrompt(id: string) {
       return { error: 'ID is required' };
     }
 
-    await db.collection('custom-prompts').doc(id).delete();
+    await db.collection(collection('custom-prompts')).doc(id).delete();
 
     revalidatePath('/prompts');
     return { success: true };

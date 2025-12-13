@@ -1,20 +1,26 @@
 import firebase_admin
 from firebase_admin import firestore
 from typing import Optional
+from app.config import settings
 
 
 class FirestoreService:
-    def __init__(self):
+    def __init__(self, collection_prefix: str = "superexam-"):
         # Initialize Firebase Admin with default credentials from gcloud auth
         # Uses Application Default Credentials (ADC) from gcloud auth login
         if not firebase_admin._apps:
             firebase_admin.initialize_app()
 
         self.db = firestore.client()
+        self.prefix = collection_prefix
+
+    def _collection(self, name: str):
+        """Get collection with prefix"""
+        return self.db.collection(f"{self.prefix}{name}")
 
     def get_document(self, doc_id: str) -> Optional[dict]:
         """Get document metadata from Firestore"""
-        doc_ref = self.db.collection('documents').document(doc_id)
+        doc_ref = self._collection('documents').document(doc_id)
         doc = doc_ref.get()
 
         if doc.exists:
@@ -22,8 +28,11 @@ class FirestoreService:
         return None
 
     def get_prompt(self, collection: str, prompt_id: str) -> Optional[str]:
-        """Get prompt content from system-prompts or custom-prompts collection"""
-        prompt_ref = self.db.collection(collection).document(prompt_id)
+        """
+        Get prompt content from system-prompts or custom-prompts collection
+        Note: collection parameter should be the unprefixed name (e.g., 'system-prompts')
+        """
+        prompt_ref = self._collection(collection).document(prompt_id)
         prompt = prompt_ref.get()
 
         if prompt.exists:
@@ -39,7 +48,7 @@ class FirestoreService:
         error: Optional[str] = None
     ):
         """Update document processing status in Firestore"""
-        doc_ref = self.db.collection('documents').document(doc_id)
+        doc_ref = self._collection('documents').document(doc_id)
 
         update_data = {
             "status": status,
@@ -64,7 +73,7 @@ class FirestoreService:
 
     def save_questions(self, doc_id: str, questions: list[dict]):
         """Save generated questions to Firestore using batch write"""
-        doc_ref = self.db.collection('documents').document(doc_id)
+        doc_ref = self._collection('documents').document(doc_id)
         batch = self.db.batch()
 
         # Update main document
@@ -86,4 +95,5 @@ class FirestoreService:
         batch.commit()
 
 
-firestore_service = FirestoreService()
+# Initialize with prefix from settings
+firestore_service = FirestoreService(settings.firestore_collection_prefix)

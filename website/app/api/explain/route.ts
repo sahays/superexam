@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { db } from "@/lib/db/firebase";
+import { db, collection } from "@/lib/db/firebase";
 import { NextRequest } from "next/server";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch question
-    const questionRef = db.collection('documents').doc(documentId).collection('questions').doc(questionId);
+    const questionRef = db.collection(collection('documents')).doc(documentId).collection('questions').doc(questionId);
     const questionSnap = await questionRef.get();
 
     if (!questionSnap.exists) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch prompt
     const promptCollection = promptType === 'system' ? 'system-prompts' : 'custom-prompts';
-    const promptSnap = await db.collection(promptCollection).doc(promptId).get();
+    const promptSnap = await db.collection(collection(promptCollection)).doc(promptId).get();
 
     if (!promptSnap.exists) {
       return new Response(

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     redis_password: str | None = None
     redis_key_prefix: str = "superexam:"  # Prefix for all Redis keys
 
+    # Firestore Configuration
+    firestore_collection_prefix: str = "superexam-"  # Prefix for all Firestore collections
+
     # Gemini Configuration
     gemini_api_key: str
     gemini_model: str = "gemini-1.5-flash"
