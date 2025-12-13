@@ -550,3 +550,120 @@ docker-compose up -d --scale worker=4
 - ✅ **Easy Debugging:** Dedicated logs and monitoring for processing jobs
 
 ---
+
+## Epic 9: Security & Protection ✅ COMPLETE
+
+**Goal:** Implement security measures to protect the processing service from abuse, bots, and excessive usage.
+
+### Story 9.1: Rate Limiting ✅ COMPLETE
+
+**Goal:** Prevent API abuse and ensure fair resource allocation.
+
+- [x] **IP-Based Rate Limiting:**
+  - Implemented using slowapi library for FastAPI
+  - Rate limiting per IP address tracked automatically
+  - Redis-backed storage for distributed rate limiting
+  - Return 429 Too Many Requests with Retry-After header
+
+- [x] **Endpoint-Specific Limits:**
+  - `/`: 10 requests per minute per IP
+  - `/jobs/process`: 5 requests per minute per IP (expensive operation)
+  - `/jobs/status`: 30 requests per minute per IP (lightweight)
+  - `/jobs/{id}` DELETE: 10 requests per minute
+  - Health check endpoints: No rate limiting (unrestricted)
+
+- [x] **Rate Limit Response:**
+  - Custom error handler with clear error messages
+  - Retry-After header included in 429 responses
+  - Logs all rate limit violations for monitoring
+  - Automatic IP blocking after 5 violations
+
+### Story 9.2: Bot Detection & Prevention ✅ COMPLETE
+
+**Goal:** Detect and block automated bot traffic.
+
+- [x] **User-Agent Validation:**
+  - Require valid User-Agent header on all requests
+  - Block common bot user agents (scrapers, crawlers, bots)
+  - Allow legitimate browsers (Chrome, Firefox, Safari, Edge)
+  - Allow API testing tools (Postman, Insomnia)
+  - Configurable blocklist and allowlist
+
+- [x] **Request Pattern Analysis:**
+  - Track request frequency per IP per endpoint
+  - Detect suspicious patterns (>100 requests per minute)
+  - Automatic IP blocking for bot-like behavior
+  - Redis-backed request counting with automatic expiration
+
+- [x] **Header Validation:**
+  - Validate presence of User-Agent header
+  - Check for missing or suspicious header combinations
+  - Log warnings for requests with missing standard headers
+  - SecurityMiddleware enforces validation on all endpoints
+
+### Story 9.3: Request Validation & Sanitization
+
+**Goal:** Ensure all incoming requests are valid and safe.
+
+- [ ] **Input Validation:**
+  - Validate all request parameters (docId, promptIds)
+  - Sanitize file paths to prevent directory traversal
+  - Validate JSON schema structure
+  - Check document ID format and existence
+
+- [ ] **Size Limits:**
+  - Limit request body size (max 1MB for JSON)
+  - Validate prompt content length
+  - Prevent oversized schema uploads
+
+### Story 9.4: IP Blocking & Blacklisting ✅ COMPLETE
+
+**Goal:** Block malicious IPs and repeat offenders.
+
+- [x] **Automatic IP Blocking:**
+  - Block IPs that exceed rate limits repeatedly (after 5 violations)
+  - Temporary blocks (1 hour default) for rate limit violations
+  - Permanent blocks for severe abuse patterns (>100 requests/min)
+  - Store blocked IPs in Redis with automatic expiration
+  - Track block reason and timestamp in Redis
+
+- [x] **IP Block Management:**
+  - `is_ip_blocked()` - Check if IP is currently blocked
+  - `block_ip()` - Block IP with duration and reason
+  - `unblock_ip()` - Manually unblock IP
+  - `get_block_info()` - Get detailed block information
+  - Logging of all block/unblock actions
+
+### Story 9.5: Monitoring & Alerts ✅ COMPLETE
+
+**Goal:** Track security events and respond to threats.
+
+- [x] **Security Event Logging:**
+  - Log all rate limit violations with IP and endpoint
+  - Log blocked requests and IPs with reasons
+  - Log suspicious bot activity (invalid User-Agent, patterns)
+  - Track error rates and patterns in application logs
+  - Structured logging with timestamps and severity levels
+
+- [ ] **Metrics & Dashboards:**
+  - Track rate limit hits per endpoint (future: Prometheus)
+  - Monitor blocked request count (future: Grafana dashboard)
+  - Alert on unusual traffic patterns (future: alerting system)
+  - Dashboard for security metrics (future enhancement)
+
+### Story 9.6: Authentication & Authorization (Future)
+
+**Goal:** Add authentication layer for API access.
+
+- [ ] **API Key Authentication:**
+  - Generate unique API keys per client
+  - Validate API key on all requests
+  - Rate limit per API key (not just IP)
+  - Revocable API keys
+
+- [ ] **Request Signing:**
+  - HMAC-based request signatures
+  - Prevent replay attacks with timestamps
+  - Validate request integrity
+
+---
