@@ -95,7 +95,7 @@ class FirestoreService:
 
         update_data = {
             "status": status,
-            "updatedAt": firestore.SERVER_TIMESTAMP
+            "updatedAt": int(time.time() * 1000)
         }
 
         if progress is not None:
@@ -125,7 +125,7 @@ class FirestoreService:
             "questionCount": len(questions),
             "progress": firestore.DELETE_FIELD,
             "currentStep": firestore.DELETE_FIELD,
-            "updatedAt": firestore.SERVER_TIMESTAMP
+            "updatedAt": int(time.time() * 1000)
         })
 
         # Add questions to subcollection
@@ -140,7 +140,7 @@ class FirestoreService:
     def create_job(self, job_id: str, job_data: dict):
         """Create a new job record in Firestore"""
         job_ref = self._collection('jobs').document(job_id)
-        job_data['createdAt'] = firestore.SERVER_TIMESTAMP
+        job_data['createdAt'] = int(time.time() * 1000)
         job_ref.set(job_data)
 
     def get_job(self, job_id: str) -> Optional[dict]:
@@ -154,7 +154,7 @@ class FirestoreService:
     def update_job(self, job_id: str, updates: dict):
         """Update job data in Firestore"""
         job_ref = self._collection('jobs').document(job_id)
-        updates['updatedAt'] = firestore.SERVER_TIMESTAMP
+        updates['updatedAt'] = int(time.time() * 1000)
         job_ref.update(updates)
 
 

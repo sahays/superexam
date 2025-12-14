@@ -1,9 +1,9 @@
-import { db } from "@/lib/db/firebase";
+import { db, collection } from "@/lib/db/firebase";
 import { Document } from "@/lib/types";
 
 export async function getDocuments(): Promise<Document[]> {
   try {
-    const snapshot = await db.collection('documents')
+    const snapshot = await db.collection(collection('documents'))
       .orderBy('createdAt', 'desc')
       .get();
 
