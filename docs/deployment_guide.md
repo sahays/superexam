@@ -31,6 +31,7 @@ export FIRESTORE_COLLECTION_PREFIX="superexam-"
 
 # Secrets
 export GEMINI_API_KEY="your-gemini-api-key"
+export GEMINI_MODEL="gemini-1.5-flash"
 
 # Image Tags
 export IMAGE_TAG="v1"
@@ -114,7 +115,7 @@ gcloud run deploy superexam-api \
   --allow-unauthenticated \
   --command "uvicorn" \
   --args "app.main:app,--host,0.0.0.0,--port,8080" \
-  --set-env-vars "GCS_BUCKET_NAME=$GCS_BUCKET_NAME,GEMINI_API_KEY=$GEMINI_API_KEY,FIRESTORE_COLLECTION_PREFIX=$FIRESTORE_COLLECTION_PREFIX"
+  --set-env-vars "GCS_BUCKET_NAME=$GCS_BUCKET_NAME,GEMINI_API_KEY=$GEMINI_API_KEY,FIRESTORE_COLLECTION_PREFIX=$FIRESTORE_COLLECTION_PREFIX,GCP_PROJECT_ID=$PROJECT_ID,GEMINI_MODEL=$GEMINI_MODEL"
 ```
 
 **Note:** Capture the Service URL from the output (e.g., `https://superexam-api-xyz.run.app`).
@@ -133,7 +134,25 @@ gcloud run deploy superexam-website \
   --region $REGION \
   --project $PROJECT_ID \
   --allow-unauthenticated \
-  --set-env-vars "PROCESSING_SERVICE_URL=$PROCESSING_SERVICE_URL,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,GEMINI_API_KEY=$GEMINI_API_KEY,FIRESTORE_COLLECTION_PREFIX=$FIRESTORE_COLLECTION_PREFIX"
+  --set-env-vars "PROCESSING_SERVICE_URL=$PROCESSING_SERVICE_URL,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,GEMINI_API_KEY=$GEMINI_API_KEY,FIRESTORE_COLLECTION_PREFIX=$FIRESTORE_COLLECTION_PREFIX,GCP_PROJECT_ID=$PROJECT_ID,GEMINI_MODEL=$GEMINI_MODEL"
+```
+
+### C. Update Existing Services (Fast Deploy)
+
+If you have only rebuilt the images (e.g., `IMAGE_TAG=v2`) and don't need to change environment variables:
+
+```bash
+# Update Website
+gcloud run deploy superexam-website \
+  --image $WEBSITE_IMAGE \
+  --region $REGION \
+  --project $PROJECT_ID
+
+# Update API
+gcloud run deploy superexam-api \
+  --image $API_IMAGE \
+  --region $REGION \
+  --project $PROJECT_ID
 ```
 
 ## 5. Verification
