@@ -4,13 +4,6 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    # Redis Configuration
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-    redis_password: str | None = None
-    redis_key_prefix: str = "superexam:"  # Prefix for all Redis keys
-
     # Firestore Configuration
     firestore_collection_prefix: str = "superexam-"  # Prefix for all Firestore collections
 
@@ -21,11 +14,11 @@ class Settings(BaseSettings):
     # Processing Configuration
     max_retry_attempts: int = 3
     retry_delays: List[int] = [0, 30, 60]  # Exponential backoff in seconds
-    worker_poll_interval: int = 1  # Worker poll interval in seconds
     job_ttl: int = 86400  # Job TTL in seconds (24 hours)
 
     # File Configuration
     uploads_dir: str = "/uploads"  # Default for Docker, override for local
+    gcs_bucket_name: str = "superexam-uploads"  # GCS Bucket for file storage
 
     # Server Configuration
     port: int = 8000

@@ -3,9 +3,16 @@
 import { db, collection } from "@/lib/db/firebase";
 import { Document, Question } from "@/lib/types";
 import { revalidatePath } from "next/cache";
-import { writeFile, readFile } from "fs/promises";
-import { join } from "path";
+import { Storage } from "@google-cloud/storage";
 import { generateQuestionsFromPDF } from "@/lib/services/ai";
+import { GoogleAuth } from "google-auth-library";
+
+// Initialize GCS
+const storage = new Storage();
+const bucketName = process.env.GCS_BUCKET_NAME || 'superexam-uploads';
+
+// Initialize Google Auth
+const auth = new GoogleAuth();
 
 // Default JSON Schema for QA extraction
 const DEFAULT_QA_SCHEMA = {
@@ -72,20 +79,19 @@ export async function uploadDocument(formData: FormData) {
       return { error: 'Document name is required' };
     }
 
-    // 1. Save File to Local System
+    // 1. Save File to GCS
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     // Ensure unique filename
     const uniqueFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    // Save to superexam/uploads (parent directory)
-    const uploadDir = join(process.cwd(), '..', 'uploads');
-    const filePath = join(uploadDir, uniqueFilename);
-
-    // Ensure directory exists (Node 10+ recursive) - actually we did this in shell, but good practice
-    // await mkdir(uploadDir, { recursive: true });
-
-    await writeFile(filePath, buffer);
+    
+    try {
+      await storage.bucket(bucketName).file(uniqueFilename).save(buffer);
+    } catch (gcsError) {
+      console.error('GCS Upload Error:', gcsError);
+      return { error: 'Failed to upload file to storage.' };
+    }
 
     // 2. Create Document Record
     const docRef = db.collection(collection('documents')).doc();
@@ -147,29 +153,46 @@ export async function processDocument(docId: string, systemPromptId: string, cus
 
     // 4. Call Python processing service
     const processingServiceUrl = process.env.PROCESSING_SERVICE_URL || 'http://localhost:8000';
+    const requestBody = {
+      doc_id: docId,
+      system_prompt_id: systemPromptId,
+      custom_prompt_id: customPromptId,
+      schema: JSON.stringify(DEFAULT_QA_SCHEMA)
+    };
 
-    const response = await fetch(`${processingServiceUrl}/jobs/process`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        doc_id: docId,
-        system_prompt_id: systemPromptId,
-        custom_prompt_id: customPromptId,
-        schema: JSON.stringify(DEFAULT_QA_SCHEMA)
-      })
-    });
+    let jobId;
 
-    if (!response.ok) {
-      throw new Error(`Processing service returned ${response.status}`);
+    // Use Google Auth for remote services, plain fetch for localhost
+    if (processingServiceUrl.includes('localhost')) {
+        const response = await fetch(`${processingServiceUrl}/jobs/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Processing service returned ${response.status}`);
+        }
+        const data = await response.json();
+        jobId = data.job_id;
+    } else {
+        // Authenticated request for Cloud Run
+        console.log(`Authenticating with service: ${processingServiceUrl}`);
+        const client = await auth.getIdTokenClient(processingServiceUrl);
+        const response = await client.request({
+            url: `${processingServiceUrl}/jobs/process`,
+            method: 'POST',
+            data: requestBody
+        });
+        const data = response.data as any;
+        jobId = data.job_id;
     }
 
-    const { job_id } = await response.json();
-
-    console.log(`Processing job ${job_id} created for document ${docId}`);
+    console.log(`Processing job ${jobId} created for document ${docId}`);
 
     // 5. Return immediately - processing happens in background
     revalidatePath('/documents');
-    return { success: true, message: 'Processing started', jobId: job_id };
+    return { success: true, message: 'Processing started', jobId: jobId };
 
   } catch (error) {
     console.error('Processing error:', error);
@@ -226,16 +249,13 @@ export async function deleteDocument(docId: string) {
     if (docSnap.exists) {
       const docData = docSnap.data() as Document & { filePath?: string };
 
-      // 2. Delete the physical PDF file
+      // 2. Delete the file from GCS
       if (docData.filePath) {
         try {
-          const uploadDir = join(process.cwd(), '..', 'uploads');
-          const filePath = join(uploadDir, docData.filePath);
-          const { unlink } = await import('fs/promises');
-          await unlink(filePath);
-          console.log(`Deleted file: ${filePath}`);
-        } catch (fileError) {
-          console.error('Failed to delete file:', fileError);
+          await storage.bucket(bucketName).file(docData.filePath).delete();
+          console.log(`Deleted GCS file: ${docData.filePath}`);
+        } catch (gcsError) {
+          console.error('Failed to delete GCS file:', gcsError);
           // Continue with document deletion even if file deletion fails
         }
       }
@@ -313,7 +333,7 @@ export async function getDocumentDetails(docId: string) {
       ...doc.data()
     }));
 
-    return {
+    return { 
       success: true,
       document,
       systemPrompt,

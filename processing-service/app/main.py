@@ -1,13 +1,11 @@
 import logging
-from fastapi import FastAPI, HTTPException, Request
+import uuid
+import time
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from app.models import ProcessJobRequest, ProcessJobResponse, JobStatusResponse
-from app.services import redis_service, init_security_service, security_service
-from app.middleware import SecurityMiddleware
+from app.services import firestore_service
 from app.config import settings
 
 # Configure logging
@@ -17,53 +15,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
-
 # Create FastAPI app
 app = FastAPI(
     title="SuperExam Processing Service",
     description="Background service for exam question generation from PDFs",
     version="1.0.0"
 )
-
-# Set rate limiter state
-app.state.limiter = limiter
-
-
-# Custom rate limit exceeded handler
-@app.exception_handler(RateLimitExceeded)
-async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    """
-    Custom handler for rate limit exceeded
-
-    Logs the violation and potentially blocks repeat offenders
-    """
-    client_ip = request.client.host if request.client else "unknown"
-    logger.warning(f"Rate limit exceeded for {client_ip} on {request.url.path}")
-
-    # Record rate limit violation
-    if security_service:
-        security_service.record_rate_limit_violation(client_ip)
-
-    return JSONResponse(
-        status_code=429,
-        content={
-            "error": "Rate limit exceeded",
-            "message": "Too many requests. Please slow down.",
-            "retry_after": exc.detail.split("Retry after ")[1] if "Retry after" in exc.detail else "60 seconds"
-        },
-        headers={
-            "Retry-After": "60"
-        }
-    )
-
-# Initialize security service
-init_security_service(redis_service.client, settings.redis_key_prefix)
-logger.info("Security service initialized")
-
-# Add security middleware (bot detection, IP blocking)
-app.add_middleware(SecurityMiddleware)
 
 # CORS middleware (configure for production)
 app.add_middleware(
@@ -76,84 +33,74 @@ app.add_middleware(
 
 
 @app.get("/")
-@limiter.limit("10/minute")
 def root(request: Request):
     """Root endpoint - service info"""
     return {
         "service": "SuperExam Processing Service",
         "status": "running",
-        "version": "1.0.0",
-        "redis_prefix": settings.redis_key_prefix
+        "version": "1.0.0"
     }
 
 
 @app.get("/health")
 def health_check(request: Request):
-    """Health check endpoint - verifies Redis connectivity"""
-    try:
-        redis_connected = redis_service.ping()
-        if redis_connected:
-            return {
-                "status": "healthy",
-                "redis": "connected",
-                "prefix": settings.redis_key_prefix
-            }
-        else:
-            return {
-                "status": "unhealthy",
-                "redis": "disconnected",
-                "error": "Redis ping failed"
-            }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+    """Health check endpoint"""
+    return {"status": "healthy"}
 
 
 @app.post("/jobs/process", response_model=ProcessJobResponse)
-@limiter.limit("5/minute")
-def create_process_job(request: Request, job_request: ProcessJobRequest):
+def create_process_job(request: Request, job_request: ProcessJobRequest, background_tasks: BackgroundTasks):
     """
     Create a new document processing job
-
-    - Validates request data
-    - Creates job in Redis with PENDING status
-    - Adds job to queue for worker processing
-    - Returns job_id for status tracking
-
-    Rate limit: 5 requests per minute (expensive operation)
     """
+    # Rate limit: 5 requests per minute
+    client_ip = request.client.host if request.client else "unknown"
+    if not firestore_service.check_rate_limit(f"rate_limit:process:{client_ip}", limit=5, window_seconds=60):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again later.")
+
     try:
-        job_id = redis_service.create_job(
-            doc_id=job_request.doc_id,
-            system_prompt_id=job_request.system_prompt_id,
-            custom_prompt_id=job_request.custom_prompt_id,
-            schema=job_request.schema
-        )
+        job_id = str(uuid.uuid4())
+        
+        job_data = {
+            "job_id": job_id,
+            "doc_id": job_request.doc_id,
+            "system_prompt_id": job_request.system_prompt_id,
+            "custom_prompt_id": job_request.custom_prompt_id,
+            "schema": job_request.schema,
+            "status": "pending",
+            "attempt": 0,
+            "created_at": int(time.time()),
+        }
+
+        firestore_service.create_job(job_id, job_data)
 
         logger.info(f"Created job {job_id} for document {job_request.doc_id}")
 
+        # Trigger processing immediately in background (Local)
+        # In Prod, this would be a Cloud Task enqueued here
+        from app.services.processor import process_job_logic
+        background_tasks.add_task(process_job_logic, job_id)
+
         return ProcessJobResponse(job_id=job_id)
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create job: {e}")
         raise HTTPException(status_code=500, detail="Failed to create job")
 
 
 @app.get("/jobs/{job_id}", response_model=JobStatusResponse)
-@limiter.limit("30/minute")
 def get_job_status(request: Request, job_id: str):
     """
     Get job status by ID
-
-    - Returns job metadata including status, attempts, timestamps
-    - Used for debugging and monitoring
-
-    Rate limit: 30 requests per minute (lightweight operation)
     """
-    job = redis_service.get_job(job_id)
+    # Rate limit: 30 requests per minute
+    client_ip = request.client.host if request.client else "unknown"
+    if not firestore_service.check_rate_limit(f"rate_limit:status:{client_ip}", limit=30, window_seconds=60):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again later.")
+
+    job = firestore_service.get_job(job_id)
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -162,17 +109,11 @@ def get_job_status(request: Request, job_id: str):
 
 
 @app.delete("/jobs/{job_id}")
-@limiter.limit("10/minute")
 def cancel_job(request: Request, job_id: str):
     """
     Cancel a pending job
-
-    - Can only cancel jobs with PENDING status
-    - Processing jobs cannot be cancelled
-
-    Rate limit: 10 requests per minute
     """
-    job = redis_service.get_job(job_id)
+    job = firestore_service.get_job(job_id)
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -183,10 +124,30 @@ def cancel_job(request: Request, job_id: str):
             detail="Cannot cancel job in progress"
         )
 
-    redis_service.mark_failed(job_id, "Cancelled by user")
+    firestore_service.update_job(job_id, {"status": "failed", "error": "Cancelled by user"})
     logger.info(f"Job {job_id} cancelled")
 
     return {"message": "Job cancelled"}
+
+
+@app.post("/jobs/execute")
+async def execute_job(request: Request, payload: dict):
+    """
+    Execute a processing job.
+    Designed to be called by Cloud Tasks (Push Queue).
+    """
+    job_id = payload.get("job_id")
+    if not job_id:
+        raise HTTPException(status_code=400, detail="Missing job_id")
+        
+    try:
+        from app.services.processor import process_job_logic
+        await process_job_logic(job_id)
+        return {"status": "success", "job_id": job_id}
+    except Exception as e:
+        logger.error(f"Execution failed for job {job_id}: {e}")
+        # Return 500 to trigger Cloud Tasks retry
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

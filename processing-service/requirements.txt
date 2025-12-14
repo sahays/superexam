@@ -2,8 +2,7 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.6
 pydantic-settings==2.7.1
-redis==5.2.1
 firebase-admin==6.6.0
 google-generativeai==0.8.3
 python-multipart==0.0.20
-slowapi==0.1.9
+google-cloud-storage==2.14.0

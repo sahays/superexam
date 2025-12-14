@@ -1,6 +1,8 @@
 import firebase_admin
 from firebase_admin import firestore
 from typing import Optional
+import time
+from firebase_admin import firestore
 from app.config import settings
 
 
@@ -17,6 +19,47 @@ class FirestoreService:
     def _collection(self, name: str):
         """Get collection with prefix"""
         return self.db.collection(f"{self.prefix}{name}")
+
+    def check_rate_limit(self, key: str, limit: int, window_seconds: int) -> bool:
+        """
+        Check if request is allowed under rate limit using Firestore transaction.
+        Returns True if allowed, False if limit exceeded.
+        """
+        doc_ref = self._collection('rate_limits').document(key)
+        transaction = self.db.transaction()
+
+        @firestore.transactional
+        def update_in_transaction(transaction, ref):
+            snapshot = ref.get(transaction=transaction)
+            now = time.time()
+            
+            if not snapshot.exists:
+                transaction.set(ref, {
+                    "count": 1,
+                    "reset_at": now + window_seconds
+                })
+                return True
+            
+            data = snapshot.to_dict()
+            reset_at = data.get("reset_at", 0)
+            
+            if now > reset_at:
+                # Window expired, reset
+                transaction.set(ref, {
+                    "count": 1,
+                    "reset_at": now + window_seconds
+                })
+                return True
+            
+            if data.get("count", 0) >= limit:
+                return False
+            
+            transaction.update(ref, {
+                "count": firestore.Increment(1)
+            })
+            return True
+
+        return update_in_transaction(transaction, doc_ref)
 
     def get_document(self, doc_id: str) -> Optional[dict]:
         """Get document metadata from Firestore"""
@@ -93,6 +136,26 @@ class FirestoreService:
 
         # Commit all changes atomically
         batch.commit()
+
+    def create_job(self, job_id: str, job_data: dict):
+        """Create a new job record in Firestore"""
+        job_ref = self._collection('jobs').document(job_id)
+        job_data['createdAt'] = firestore.SERVER_TIMESTAMP
+        job_ref.set(job_data)
+
+    def get_job(self, job_id: str) -> Optional[dict]:
+        """Get job data from Firestore"""
+        job_ref = self._collection('jobs').document(job_id)
+        job = job_ref.get()
+        if job.exists:
+            return job.to_dict()
+        return None
+
+    def update_job(self, job_id: str, updates: dict):
+        """Update job data in Firestore"""
+        job_ref = self._collection('jobs').document(job_id)
+        updates['updatedAt'] = firestore.SERVER_TIMESTAMP
+        job_ref.update(updates)
 
 
 # Initialize with prefix from settings

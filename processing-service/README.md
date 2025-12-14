@@ -4,20 +4,19 @@ Python background processing service for long-running exam question generation t
 
 ## Features
 
-- ✅ Non-blocking job processing with Redis queue
-- ✅ Automatic retry with exponential backoff (3 attempts)
+- ✅ Asynchronous job processing (FastAPI BackgroundTasks)
 - ✅ Real-time progress updates via Firestore
-- ✅ Scalable worker processes
-- ✅ Prefixed Redis keys for multi-project environments
+- ✅ Google Cloud Storage (GCS) integration for files
+- ✅ Rate limiting via Firestore
 
 ## Architecture
 
 ```
-Next.js → FastAPI → Redis Queue → Workers → Gemini API
-                         ↓
-                   Firestore (status updates)
-                         ↓
-                   Next.js UI (polling)
+Next.js → FastAPI (API + Processor) → Gemini API
+                 ↓
+           Firestore (status updates)
+                 ↓
+           Next.js UI (polling)
 ```
 
 ## Setup
@@ -25,10 +24,9 @@ Next.js → FastAPI → Redis Queue → Workers → Gemini API
 ### 1. Prerequisites
 
 - Python 3.11+
-- Docker & Docker Compose
-- Redis instance running on port 6379
 - Google Cloud authentication (`gcloud auth login`)
 - Gemini API key
+- Google Cloud Storage bucket
 
 ### 2. Google Cloud Authentication
 
@@ -56,29 +54,21 @@ nano .env
 **Required Configuration:**
 
 ```env
-# Redis - Use your existing Redis instance
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_KEY_PREFIX=superexam:  # Prefix to avoid key conflicts
-
 # Gemini API
 GEMINI_API_KEY=your-api-key-here
+
+# Google Cloud Storage
+GCS_BUCKET_NAME=your-bucket-name
 ```
 
-### 4. Start Services
+### 4. Start Service
 
 ```bash
-# Build and start all services
-docker-compose up -d
+# Install dependencies
+pip install -r requirements.txt
 
-# View logs
-docker-compose logs -f
-
-# View worker logs only
-docker-compose logs -f worker
-
-# Scale workers
-docker-compose up -d --scale worker=4
+# Run API server
+uvicorn app.main:app --reload --port 8000
 ```
 
 ## Usage
@@ -88,19 +78,14 @@ docker-compose up -d --scale worker=4
 ```bash
 curl -X POST http://localhost:8000/jobs/process \
   -H "Content-Type: application/json" \
-  -d '{
-    "doc_id": "firestore-doc-id",
-    "system_prompt_id": "prompt-id",
-    "custom_prompt_id": "prompt-id",
-    "schema": null
-  }'
+  -d 
+'{ "doc_id": "firestore-doc-id", "system_prompt_id": "prompt-id", "custom_prompt_id": "prompt-id", "schema": null }'
 ```
 
 **Response:**
 ```json
 {
-  "job_id": "uuid-here",
-  "message": "Job queued successfully"
+  "job_id": "uuid-here"
 }
 ```
 
@@ -116,119 +101,9 @@ curl http://localhost:8000/jobs/{job_id}
 curl http://localhost:8000/health
 ```
 
-## Redis Key Structure
+## Deployment
 
-All keys are prefixed with `REDIS_KEY_PREFIX` (default: `superexam:`):
-
-- `superexam:job:{job_id}` - Job data (JSON)
-- `superexam:job_queue` - Main job queue (LIST)
-- `superexam:delayed_jobs` - Delayed retry queue (SORTED SET)
-
-## Monitoring
-
-### View Logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f worker
-docker-compose logs -f api
-```
-
-### Inspect Redis
-
-```bash
-# Connect to your existing Redis instance
-redis-cli
-
-# View all SuperExam jobs
-KEYS superexam:job:*
-
-# View queue
-LRANGE superexam:job_queue 0 -1
-
-# View delayed jobs
-ZRANGE superexam:delayed_jobs 0 -1 WITHSCORES
-```
-
-### Check Health
-
-```bash
-curl http://localhost:8000/health
-```
-
-## Scaling
-
-```bash
-# Scale to 8 workers
-docker-compose up -d --scale worker=8
-
-# Scale down to 2 workers
-docker-compose up -d --scale worker=2
-```
-
-## Development
-
-### Local Development
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run API server
-python -m app.main
-
-# Run worker (in separate terminal)
-python -m app.worker
-```
-
-### Environment Variables
-
-See `.env.example` for all available configuration options.
-
-## Troubleshooting
-
-### Worker not processing jobs
-
-1. Check Redis connection:
-   ```bash
-   curl http://localhost:8000/health
-   ```
-
-2. Check worker logs:
-   ```bash
-   docker-compose logs -f worker
-   ```
-
-3. Verify Redis keys:
-   ```bash
-   redis-cli
-   KEYS superexam:*
-   ```
-
-4. Ensure Redis is accessible:
-   ```bash
-   redis-cli ping
-   # Should return: PONG
-   ```
-
-### Jobs failing immediately
-
-1. Check Google Cloud authentication:
-   ```bash
-   gcloud auth application-default print-access-token
-   ```
-
-2. Verify PDF file exists in `/uploads`
-3. Check Gemini API key is valid
-4. Review worker logs for detailed errors
-5. Ensure gcloud credentials are mounted correctly
-
-### Redis key conflicts
-
-Ensure `REDIS_KEY_PREFIX` is unique across all projects using the same Redis instance.
+See [Cloud Run Deployment Guide](../docs/deployment_guide.md).
 
 ## Documentation
 
