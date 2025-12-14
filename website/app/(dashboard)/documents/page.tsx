@@ -3,6 +3,8 @@ import { DocumentCard } from "@/components/documents/document-card"
 import { getDocuments } from "@/lib/db/documents"
 import { Separator } from "@/components/ui/separator"
 
+export const dynamic = "force-dynamic";
+
 export default async function DocumentsPage() {
   const documents = await getDocuments()
 

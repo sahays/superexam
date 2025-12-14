@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PromptCard } from "@/components/prompts/prompt-card"
 import { CreatePromptDialog } from "@/components/prompts/create-prompt-dialog"
 
+export const dynamic = "force-dynamic";
+
 export default async function PromptsPage() {
   const systemPrompts = await getSystemPrompts()
   const customPrompts = await getCustomPrompts()
