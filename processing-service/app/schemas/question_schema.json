@@ -1,0 +1,35 @@
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "questionText": {
+        "type": "string",
+        "description": "The content of the question."
+      },
+      "options": {
+        "type": "array",
+        "description": "A list of answer choices.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "string",
+              "description": "The option label (e.g., 'A', 'B', 'C')."
+            },
+            "text": {
+              "type": "string",
+              "description": "The text content of the option."
+            }
+          },
+          "required": ["index", "text"]
+        }
+      },
+      "correctAnswer": {
+        "type": "string",
+        "description": "The index or indices of the correct answer(s) (e.g., 'A' for single, 'AC' for multiple)."
+      }
+    },
+    "required": ["questionText", "options", "correctAnswer"]
+  }
+}

@@ -1,8 +1,10 @@
 import json
 import time
 import logging
+import os
 from typing import Optional
 import google.generativeai as genai
+from jsonschema import validate, ValidationError
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -31,7 +33,7 @@ class GeminiService:
         if schema:
             prompt += f"""
 
-Schema:
+Additional Instructions:
 {schema}
 """
 
@@ -41,10 +43,29 @@ Schema:
             "data": pdf_buffer
         }
 
+        # Load the external schema
+        try:
+            schema_path = os.path.join(os.path.dirname(__file__), "../schemas/question_schema.json")
+            with open(schema_path, "r") as f:
+                response_schema = json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load response schema: {e}")
+            raise ValueError(f"Configuration error: Could not load response schema: {str(e)}")
+
         try:
             # Generate content
-            logger.info("Sending request to Gemini API...")
-            response = self.model.generate_content([prompt, pdf_part])
+            logger.info(f"Sending request to Gemini API with prompt: {prompt}")
+            
+            generation_config = {
+                "response_mime_type": "application/json",
+                "response_schema": response_schema
+            }
+            
+            # Note: By default, generate_content waits for the full response (no stream=True)
+            response = self.model.generate_content(
+                [prompt, pdf_part],
+                generation_config=generation_config
+            )
             
             # Check for safety blocks or empty responses
             if not response.parts:
@@ -55,6 +76,7 @@ Schema:
                 raise ValueError(error_msg)
 
             text_response = response.text
+            logger.info(f"Gemini Raw Response: {text_response}")
 
             # Clean response (remove markdown code blocks if present)
             json_string = text_response.replace("```json", "").replace("```", "").strip()
@@ -64,25 +86,38 @@ Schema:
 
             # Parse JSON response
             try:
-                questions = json.loads(json_string)
+                raw_questions = json.loads(json_string)
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON from Gemini: {e}. Raw response: {text_response[:200]}...")
                 raise ValueError(f"Gemini returned invalid JSON: {str(e)}")
 
-            # Validate questions is a list
-            if not isinstance(questions, list):
-                # Sometimes Gemini returns a dict with a key like "questions"
-                if isinstance(questions, dict) and "questions" in questions:
-                    questions = questions["questions"]
-                else:
-                    raise ValueError("Gemini response is not a list of questions")
+            # Validate against schema
+            try:
+                validate(instance=raw_questions, schema=response_schema)
+            except ValidationError as e:
+                logger.error(f"Schema validation failed: {e}")
+                raise ValueError(f"Gemini response did not match expected schema: {e.message}")
 
-            # Add unique IDs to questions
+            # Transform and add unique IDs to questions
+            processed_questions = []
             timestamp = int(time.time())
-            for i, q in enumerate(questions):
-                q["id"] = f"q-{timestamp}-{i}"
+            
+            for i, q in enumerate(raw_questions):
+                # Parse correctAnswer string (e.g., "A" or "AC") into list of strings ["A"] or ["A", "C"]
+                raw_answer = q.get("correctAnswer", "")
+                correct_answers = list(raw_answer) if raw_answer else []
 
-            return questions
+                # Transform to match Frontend 'Question' interface
+                processed_q = {
+                    "id": f"q-{timestamp}-{i}",
+                    "questionText": q.get("questionText", ""),
+                    "correctAnswers": correct_answers,
+                    "choices": q.get("options", [])
+                }
+                
+                processed_questions.append(processed_q)
+
+            return processed_questions
 
         except Exception as e:
             logger.error(f"Error in generate_questions: {e}")
