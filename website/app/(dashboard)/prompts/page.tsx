@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PromptCard } from "@/components/prompts/prompt-card"
 import { CreatePromptDialog } from "@/components/prompts/create-prompt-dialog"
+import { RefreshButton } from "@/components/refresh-button"
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function PromptsPage() {
             Manage system and custom prompts for AI question generation.
           </p>
         </div>
+        <RefreshButton />
       </div>
 
       <Separator />

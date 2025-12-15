@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { FileText, Play, Clock, CheckCircle2, AlertCircle, Eye } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
+import { RefreshButton } from "@/components/refresh-button"
+
+export const dynamic = "force-dynamic";
 
 export default async function ExamsPage() {
   const documents = await getDocuments()
@@ -19,11 +22,14 @@ export default async function ExamsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Exams</h1>
-        <p className="text-muted-foreground">
-          Select a document to start practicing with exam questions
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Exams</h1>
+          <p className="text-muted-foreground">
+            Select a document to start practicing with exam questions
+          </p>
+        </div>
+        <RefreshButton />
       </div>
 
       <Separator />

@@ -2,6 +2,7 @@ import { UploadDocumentDialog } from "@/components/documents/upload-dialog"
 import { DocumentCard } from "@/components/documents/document-card"
 import { getDocuments } from "@/lib/db/documents"
 import { Separator } from "@/components/ui/separator"
+import { RefreshButton } from "@/components/refresh-button"
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,10 @@ export default async function DocumentsPage() {
             Manage your study materials and generate exams.
           </p>
         </div>
-        <UploadDocumentDialog />
+        <div className="flex items-center gap-2">
+          <RefreshButton />
+          <UploadDocumentDialog />
+        </div>
       </div>
       
       <Separator />
