@@ -4,10 +4,19 @@ import logging
 import os
 from typing import Optional
 import google.generativeai as genai
-from jsonschema import validate, ValidationError
+from pydantic import BaseModel
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+class OptionSchema(BaseModel):
+    index: str
+    text: str
+
+class QuestionSchema(BaseModel):
+    questionText: str
+    options: list[OptionSchema]
+    correctAnswer: list[str]
 
 class GeminiService:
     def __init__(self):
@@ -43,22 +52,13 @@ Additional Instructions:
             "data": pdf_buffer
         }
 
-        # Load the external schema
-        try:
-            schema_path = os.path.join(os.path.dirname(__file__), "../schemas/question_schema.json")
-            with open(schema_path, "r") as f:
-                response_schema = json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load response schema: {e}")
-            raise ValueError(f"Configuration error: Could not load response schema: {str(e)}")
-
         try:
             # Generate content
             logger.info(f"Sending request to Gemini API with prompt: {prompt}")
             
             generation_config = {
                 "response_mime_type": "application/json",
-                "response_schema": response_schema
+                "response_schema": list[QuestionSchema]
             }
             
             # Note: By default, generate_content waits for the full response (no stream=True)
@@ -91,22 +91,25 @@ Additional Instructions:
                 logger.error(f"Failed to parse JSON from Gemini: {e}. Raw response: {text_response[:200]}...")
                 raise ValueError(f"Gemini returned invalid JSON: {str(e)}")
 
-            # Validate against schema
-            try:
-                validate(instance=raw_questions, schema=response_schema)
-            except ValidationError as e:
-                logger.error(f"Schema validation failed: {e}")
-                raise ValueError(f"Gemini response did not match expected schema: {e.message}")
+            # Validate questions is a list
+            if not isinstance(raw_questions, list):
+                # Sometimes Gemini returns a dict with a key like "questions"
+                if isinstance(raw_questions, dict) and "questions" in raw_questions:
+                    raw_questions = raw_questions["questions"]
+                else:
+                    raise ValueError("Gemini response is not a list of questions")
 
             # Transform and add unique IDs to questions
             processed_questions = []
             timestamp = int(time.time())
             
             for i, q in enumerate(raw_questions):
-                # Parse correctAnswer string (e.g., "A" or "AC") into list of strings ["A"] or ["A", "C"]
-                raw_answer = q.get("correctAnswer", "")
-                correct_answers = list(raw_answer) if raw_answer else []
+                if not isinstance(q, dict):
+                    raise ValueError(f"Gemini returned an invalid item at index {i}: expected dict, got {type(q).__name__}")
 
+                # Parse correctAnswer list (e.g., ["A"] or ["A", "C"])
+                correct_answers = q.get("correctAnswer", [])
+                
                 # Transform to match Frontend 'Question' interface
                 processed_q = {
                     "id": f"q-{timestamp}-{i}",

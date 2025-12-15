@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # Gemini Configuration
     gemini_api_key: str
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-3-pro-preview"
 
     # Processing Configuration
     max_retry_attempts: int = 3

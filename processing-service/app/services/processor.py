@@ -40,14 +40,14 @@ async def process_job_logic(job_id: str):
 
     try:
         # Step 1: Get document metadata
-        firestore_service.update_status(doc_id, status="processing", progress=10, current_step="Reading document...")
+        firestore_service.update_status(doc_id, status="processing", progress=10, current_step="Reading document metadata from Firestore...")
         
         doc = firestore_service.get_document(doc_id)
         if not doc or not doc.get("filePath"):
             raise ValueError("Document or file path not found in Firestore")
 
         # Step 2: Read PDF file from GCS
-        firestore_service.update_status(doc_id, status="processing", progress=20, current_step="Loading PDF file...")
+        firestore_service.update_status(doc_id, status="processing", progress=20, current_step="Downloading PDF file from Google Cloud Storage...")
         
         try:
             storage_client = storage.Client()
@@ -65,7 +65,7 @@ async def process_job_logic(job_id: str):
             raise Exception(f"Failed to download file from storage: {str(gcs_error)}")
 
         # Step 3: Get prompts
-        firestore_service.update_status(doc_id, status="processing", progress=30, current_step="Loading prompts...")
+        firestore_service.update_status(doc_id, status="processing", progress=30, current_step="Fetching prompt templates from Firestore...")
         
         system_prompt = firestore_service.get_prompt("system-prompts", job["system_prompt_id"])
         custom_prompt = firestore_service.get_prompt("custom-prompts", job["custom_prompt_id"])
@@ -74,7 +74,7 @@ async def process_job_logic(job_id: str):
             raise ValueError("Prompts not found")
 
         # Step 4: Generate questions
-        firestore_service.update_status(doc_id, status="processing", progress=40, current_step="Analyzing PDF content with AI...")
+        firestore_service.update_status(doc_id, status="processing", progress=40, current_step="Calling Gemini AI to analyze content and generate questions (this may take a minute)...")
         
         logger.info(f"Calling Gemini API for job {job_id}")
         questions = gemini_service.generate_questions(

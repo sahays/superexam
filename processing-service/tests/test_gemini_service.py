@@ -7,14 +7,13 @@ import os
 # Add processing-service to path so we can import app
 sys.path.append(os.path.abspath('processing-service'))
 
-from app.services.gemini_service import GeminiService
+from app.services.gemini_service import GeminiService, QuestionSchema
 from jsonschema import ValidationError
 
 class TestGeminiService(unittest.TestCase):
     @patch('app.services.gemini_service.genai')
     @patch('app.services.gemini_service.settings')
-    @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data='{"type": "array"}')
-    def test_generate_questions_success(self, mock_file, mock_settings, mock_genai):
+    def test_generate_questions_success(self, mock_settings, mock_genai):
         # Setup mock
         mock_settings.gemini_api_key = "fake_key"
         mock_settings.gemini_model = "fake_model"
@@ -29,12 +28,12 @@ class TestGeminiService(unittest.TestCase):
             {
                 "questionText": "Q1",
                 "options": [{"index": "A", "text": "Option A"}, {"index": "B", "text": "Option B"}],
-                "correctAnswer": "A"
+                "correctAnswer": ["A"]
             },
             {
                 "questionText": "Q2",
                 "options": [{"index": "A", "text": "Option C"}, {"index": "B", "text": "Option D"}],
-                "correctAnswer": "B"
+                "correctAnswer": ["B"]
             }
         ])
         mock_model.generate_content.return_value = mock_response
@@ -60,12 +59,11 @@ class TestGeminiService(unittest.TestCase):
         self.assertIn('generation_config', kwargs)
         config = kwargs['generation_config']
         self.assertEqual(config['response_mime_type'], "application/json")
-        self.assertIn("response_schema", config)
+        self.assertEqual(config['response_schema'], list[QuestionSchema])
 
     @patch('app.services.gemini_service.genai')
     @patch('app.services.gemini_service.settings')
-    @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data='{"type": "array", "items": {"type": "object"}}')
-    def test_generate_questions_invalid_item(self, mock_file, mock_settings, mock_genai):
+    def test_generate_questions_invalid_item(self, mock_settings, mock_genai):
         # Setup mock
         mock_settings.gemini_api_key = "fake_key"
         mock_model = MagicMock()
@@ -82,7 +80,7 @@ class TestGeminiService(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             service.generate_questions(b"pdf_data", "prompt", "custom_prompt")
         
-        self.assertIn("Gemini response did not match expected schema", str(cm.exception))
+        self.assertIn("expected dict", str(cm.exception))
 
 
 if __name__ == '__main__':
