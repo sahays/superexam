@@ -2,7 +2,7 @@
 
 import { db, collection } from "@/lib/db/firebase";
 import { Document, Question } from "@/lib/types";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore } from "next/cache";
 import { Storage } from "@google-cloud/storage";
 import { generateQuestionsFromPDF } from "@/lib/services/ai";
 import { GoogleAuth } from "google-auth-library";
@@ -67,6 +67,7 @@ const DEFAULT_QA_SCHEMA = {
 };
 
 export async function uploadDocument(formData: FormData) {
+  unstable_noStore();
   try {
     const file = formData.get('file') as File;
     const name = formData.get('name') as string;
@@ -119,6 +120,7 @@ export async function uploadDocument(formData: FormData) {
 }
 
 export async function processDocument(docId: string, systemPromptId: string, customPromptId: string) {
+  unstable_noStore();
   try {
     // 1. Verify document exists
     const docRef = db.collection(collection('documents')).doc(docId);
@@ -149,8 +151,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
       currentStep: 'Queuing job...',
       progress: 0
     });
-    revalidatePath('/documents');
-
+    
     // 4. Call Python processing service
     const processingServiceUrl = process.env.PROCESSING_SERVICE_URL || 'http://localhost:8000';
     const requestBody = {
@@ -190,7 +191,6 @@ export async function processDocument(docId: string, systemPromptId: string, cus
 
     console.log(`Processing job ${jobId} created for document ${docId}`);
 
-    // 5. Return immediately - processing happens in background
     revalidatePath('/documents');
     return { success: true, message: 'Processing started', jobId: jobId };
 
@@ -215,6 +215,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
 }
 
 export async function getDocumentStatus(docId: string) {
+  unstable_noStore();
   try {
     const docRef = db.collection(collection('documents')).doc(docId);
     const docSnap = await docRef.get();
@@ -241,6 +242,7 @@ export async function getDocumentStatus(docId: string) {
 }
 
 export async function deleteDocument(docId: string) {
+  unstable_noStore();
   try {
     // 1. Get document to find file path
     const docRef = db.collection(collection('documents')).doc(docId);
@@ -280,6 +282,7 @@ export async function deleteDocument(docId: string) {
 }
 
 export async function getDocumentDetails(docId: string) {
+  unstable_noStore();
   try {
     const docRef = db.collection(collection('documents')).doc(docId);
     const docSnap = await docRef.get();

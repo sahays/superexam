@@ -146,11 +146,16 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success("Processing started! Watch the card for updates.")
         setOpen(false)
+        toast.success("Processing started! Watch the card for updates.")
+        // Small delay to ensure DB write propagates before refresh
+        setTimeout(() => {
+          router.refresh()
+        }, 500)
+        
+        // Reset selection
         setSelectedSystemPrompt("")
         setSelectedCustomPrompt("")
-        router.refresh()
       }
     } catch (error) {
       toast.error("An unexpected error occurred.")

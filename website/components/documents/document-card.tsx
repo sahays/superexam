@@ -11,12 +11,14 @@ import { deleteDocument, getDocumentStatus } from "@/app/actions/documents"
 import { toast } from "sonner"
 import { useTransition, useEffect, useState } from "react"
 import { ProcessDocumentDialog } from "./process-dialog"
+import { useRouter } from "next/navigation"
 
 interface DocumentCardProps {
   doc: Document
 }
 
 export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [doc, setDoc] = useState<Document>(initialDoc)
 
@@ -49,6 +51,7 @@ export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
           // Stop polling if no longer processing
           if (result.document.status !== 'processing') {
             clearInterval(pollInterval)
+            router.refresh() // Sync parent page state
 
             // Show notification
             if (result.document.status === 'ready') {
@@ -68,7 +71,7 @@ export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
       isActive = false
       clearInterval(pollInterval)
     }
-  }, [doc.id, doc.status])
+  }, [doc.id, doc.status, router])
 
   // Update local state when prop changes
   useEffect(() => {
