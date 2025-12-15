@@ -14,58 +14,6 @@ const bucketName = process.env.GCS_BUCKET_NAME || 'superexam-uploads';
 // Initialize Google Auth
 const auth = new GoogleAuth();
 
-// Default JSON Schema for QA extraction
-const DEFAULT_QA_SCHEMA = {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "http://example.com/schemas/qa-item-simplified.json",
-  "title": "QA Item (Simplified)",
-  "type": "object",
-  "required": [
-    "questionText",
-    "choices",
-    "correctAnswers"
-  ],
-  "properties": {
-    "questionText": {
-      "type": "string",
-      "description": "The actual text of the question."
-    },
-    "type": {
-      "type": "string",
-      "enum": ["single_select", "multi_select"],
-      "default": "single_select",
-      "description": "Defines if the user can pick one or multiple answers."
-    },
-    "choices": {
-      "type": "array",
-      "minItems": 2,
-      "items": {
-        "type": "object",
-        "required": ["index", "text"],
-        "properties": {
-          "index": {
-            "type": ["string", "integer"],
-            "description": "Identifier for the choice (e.g., 'A', 1)."
-          },
-          "text": {
-            "type": "string",
-            "description": "The display text for the choice."
-          }
-        }
-      }
-    },
-    "correctAnswers": {
-      "type": "array",
-      "description": "Array containing the 'index' values of the correct choices.",
-      "minItems": 1,
-      "items": {
-        "type": ["string", "integer"]
-      },
-      "uniqueItems": true
-    }
-  }
-};
-
 export async function uploadDocument(formData: FormData) {
   unstable_noStore();
   try {
@@ -148,7 +96,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
     // 3. Update status to processing immediately
     await docRef.update({
       status: 'processing',
-      currentStep: 'Queuing job...',
+      currentStep: 'Queuing...',
       progress: 0
     });
     
@@ -157,8 +105,7 @@ export async function processDocument(docId: string, systemPromptId: string, cus
     const requestBody = {
       doc_id: docId,
       system_prompt_id: systemPromptId,
-      custom_prompt_id: customPromptId,
-      schema: JSON.stringify(DEFAULT_QA_SCHEMA)
+      custom_prompt_id: customPromptId
     };
 
     let jobId;

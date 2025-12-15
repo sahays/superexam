@@ -14,7 +14,7 @@ class ProcessJobRequest(BaseModel):
     doc_id: str
     system_prompt_id: str
     custom_prompt_id: str
-    schema: Optional[str] = None
+    schema: Optional[str] = None  # DEPRECATED: Schema now defined via Pydantic models in gemini_service.py
 
 
 class ProcessJobResponse(BaseModel):

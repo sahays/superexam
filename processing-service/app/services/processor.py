@@ -35,19 +35,19 @@ async def process_job_logic(job_id: str):
         doc_id,
         status="processing",
         progress=0,
-        current_step="Starting processing..."
+        current_step="Starting..."
     )
 
     try:
         # Step 1: Get document metadata
-        firestore_service.update_status(doc_id, status="processing", progress=10, current_step="Reading document metadata from Firestore...")
-        
+        firestore_service.update_status(doc_id, status="processing", progress=10, current_step="Reading metadata...")
+
         doc = firestore_service.get_document(doc_id)
         if not doc or not doc.get("filePath"):
             raise ValueError("Document or file path not found in Firestore")
 
         # Step 2: Read PDF file from GCS
-        firestore_service.update_status(doc_id, status="processing", progress=20, current_step="Downloading PDF file from Google Cloud Storage...")
+        firestore_service.update_status(doc_id, status="processing", progress=20, current_step="Downloading PDF...")
         
         try:
             storage_client = storage.Client()
@@ -65,16 +65,19 @@ async def process_job_logic(job_id: str):
             raise Exception(f"Failed to download file from storage: {str(gcs_error)}")
 
         # Step 3: Get prompts
-        firestore_service.update_status(doc_id, status="processing", progress=30, current_step="Fetching prompt templates from Firestore...")
-        
+        firestore_service.update_status(doc_id, status="processing", progress=30, current_step="Loading prompts...")
+
         system_prompt = firestore_service.get_prompt("system-prompts", job["system_prompt_id"])
         custom_prompt = firestore_service.get_prompt("custom-prompts", job["custom_prompt_id"])
 
         if not system_prompt or not custom_prompt:
             raise ValueError("Prompts not found")
 
-        # Step 4: Generate questions
-        firestore_service.update_status(doc_id, status="processing", progress=40, current_step="Calling Gemini AI to analyze content and generate questions (this may take a minute)...")
+        # Step 4: Extract text from PDF
+        firestore_service.update_status(doc_id, status="processing", progress=35, current_step="Extracting text...")
+
+        # Step 5: Generate questions
+        firestore_service.update_status(doc_id, status="processing", progress=40, current_step="Generating questions...")
         
         logger.info(f"Calling Gemini API for job {job_id}")
         questions = gemini_service.generate_questions(

@@ -4,19 +4,38 @@ import logging
 import os
 from typing import Optional
 import google.generativeai as genai
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.config import settings
+from app.services.pdf_service import pdf_service
 
 logger = logging.getLogger(__name__)
 
 class OptionSchema(BaseModel):
-    index: str
-    text: str
+    index: str = Field(
+        description="The identifier for this choice (e.g., 'A', 'B', 'C', 'D' or 1, 2, 3, 4)"
+    )
+    text: str = Field(
+        description="The text content of this answer choice"
+    )
 
 class QuestionSchema(BaseModel):
-    questionText: str
-    options: list[OptionSchema]
-    correctAnswer: list[str]
+    questionText: str = Field(
+        description="The complete text of the exam question"
+    )
+    options: list[OptionSchema] = Field(
+        description="List of possible answer choices for this question",
+        min_length=2
+    )
+    correctAnswer: list[str] = Field(
+        description="List of correct choice indices (e.g., ['A'] for single-select or ['A', 'C'] for multi-select)",
+        min_length=1
+    )
+
+class QuestionsResponse(BaseModel):
+    """Wrapper model for list of questions - required for proper JSON schema generation"""
+    questions: list[QuestionSchema] = Field(
+        description="Array of exam questions generated from the document"
+    )
 
 class GeminiService:
     def __init__(self):
@@ -30,40 +49,59 @@ class GeminiService:
         custom_prompt: str,
         schema: Optional[str] = None
     ) -> list[dict]:
-        """Generate exam questions from PDF using Gemini API"""
+        """
+        Generate exam questions from PDF using Gemini API with structured output.
 
-        # Combine prompts and schema
+        Args:
+            pdf_buffer: The PDF file content as bytes
+            system_prompt: System-level instructions for question generation
+            custom_prompt: User-specific instructions for question generation
+            schema: (IGNORED) Legacy parameter kept for API compatibility.
+                    Structured output enforces schema via Pydantic models.
+
+        Returns:
+            List of processed question dictionaries matching frontend Question interface
+        """
+
+        # Combine prompts
         prompt = f"""
 {system_prompt}
 
 {custom_prompt}
 """
 
-        if schema:
-            prompt += f"""
-
-Additional Instructions:
-{schema}
-"""
-
-        # Prepare PDF part for multimodal input
-        pdf_part = {
-            "mime_type": "application/pdf",
-            "data": pdf_buffer
-        }
+        # Note: The 'schema' parameter is ignored. With structured output,
+        # the response format is enforced via response_json_schema and Pydantic models.
+        # Adding textual schema instructions would be redundant and potentially confusing.
 
         try:
+            # Extract text from PDF
+            logger.info("Extracting text from PDF...")
+            pdf_text = pdf_service.extract_text(pdf_buffer)
+            pdf_metadata = pdf_service.get_pdf_metadata(pdf_buffer)
+
+            logger.info(f"PDF extraction complete: {pdf_metadata.get('page_count', 0)} pages, "
+                       f"{len(pdf_text)} characters")
+
+            # Combine prompt with extracted PDF text
+            full_prompt = f"""{prompt}
+
+DOCUMENT CONTENT:
+{pdf_text}
+"""
+
             # Generate content
-            logger.info(f"Sending request to Gemini API with prompt: {prompt}")
+            logger.info(f"Sending request to Gemini API with {len(full_prompt)} characters")
             
+            # Configure structured output using Pydantic model converted to JSON Schema
             generation_config = {
                 "response_mime_type": "application/json",
-                "response_schema": list[QuestionSchema]
+                "response_json_schema": QuestionsResponse.model_json_schema()
             }
-            
+
             # Note: By default, generate_content waits for the full response (no stream=True)
             response = self.model.generate_content(
-                [prompt, pdf_part],
+                full_prompt,
                 generation_config=generation_config
             )
             
@@ -84,20 +122,28 @@ Additional Instructions:
             if not json_string:
                 raise ValueError("Gemini returned empty text content")
 
-            # Parse JSON response
+            # Parse and validate JSON response using Pydantic model
             try:
-                raw_questions = json.loads(json_string)
+                # Validate response against schema
+                validated_response = QuestionsResponse.model_validate_json(json_string)
+                raw_questions = [q.model_dump() for q in validated_response.questions]
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON from Gemini: {e}. Raw response: {text_response[:200]}...")
                 raise ValueError(f"Gemini returned invalid JSON: {str(e)}")
-
-            # Validate questions is a list
-            if not isinstance(raw_questions, list):
-                # Sometimes Gemini returns a dict with a key like "questions"
-                if isinstance(raw_questions, dict) and "questions" in raw_questions:
-                    raw_questions = raw_questions["questions"]
-                else:
-                    raise ValueError("Gemini response is not a list of questions")
+            except Exception as e:
+                logger.error(f"Failed to validate response against schema: {e}")
+                # Fallback: try manual parsing for backward compatibility
+                try:
+                    response_data = json.loads(json_string)
+                    if isinstance(response_data, dict) and "questions" in response_data:
+                        raw_questions = response_data["questions"]
+                    elif isinstance(response_data, list):
+                        raw_questions = response_data
+                    else:
+                        raise ValueError("Gemini response does not match expected structure")
+                except Exception as fallback_error:
+                    logger.error(f"Fallback parsing also failed: {fallback_error}")
+                    raise ValueError(f"Failed to parse Gemini response: {str(e)}")
 
             # Transform and add unique IDs to questions
             processed_questions = []

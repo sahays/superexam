@@ -1,7 +1,9 @@
 import { db, collection } from "@/lib/db/firebase";
 import { Document } from "@/lib/types";
+import { unstable_noStore } from "next/cache";
 
 export async function getDocuments(): Promise<Document[]> {
+  unstable_noStore(); // Prevent Next.js from caching this data
   try {
     const snapshot = await db.collection(collection('documents'))
       .orderBy('createdAt', 'desc')

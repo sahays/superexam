@@ -4,315 +4,330 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**SuperExam** is a Next.js 16 web application that generates and administers interactive exams from PDF documents using Google Gemini AI. The project follows a server-first architecture with a monolithic Next.js application using Server Actions and Google Cloud Firestore.
+**SuperExam** is a Next.js 16 web application that generates and administers interactive exams from PDF documents using Google Gemini AI. The architecture consists of two services:
+- **Next.js Frontend** (`website/`) - UI, Server Actions, and basic processing
+- **Python Processing Service** (`processing-service/`) - Heavy AI processing via FastAPI
 
 ## Development Commands
 
-### Setup
+### Next.js Website
+
 ```bash
 cd website
-npm install
+npm install          # Install dependencies
+npm run dev          # Development server (http://localhost:3000)
+npm run build        # Production build
+npm start            # Production server
+npm run lint         # Run ESLint
 ```
 
-### Development
+### Python Processing Service
+
 ```bash
-cd website
-npm run dev
-# Server runs at http://localhost:3000
+cd processing-service
+pip install -r requirements.txt                    # Install dependencies
+uvicorn app.main:app --reload --port 8000         # Development server (http://localhost:8000)
 ```
 
-### Build & Production
-```bash
-cd website
-npm run build
-npm start
-```
+### Deployment
 
-### Linting
 ```bash
-cd website
-npm run lint
+# Quick upgrade (no env var changes)
+./deploy.sh
+
+# Full deployment (with env var updates)
+./deploy.sh --full
 ```
 
 ## Architecture Overview
 
-### Monorepo Structure
-- **`docs/`** - Project planning and design specifications (source of truth)
-- **`website/`** - Next.js 16 application (all code lives here)
+### Service Communication Flow
 
-### Navigation Structure
-- **`/`** - Welcome landing page with quick stats and CTAs
-- **`/documents`** - Upload and manage PDF documents
-- **`/prompts`** - Create and manage system/custom prompts
-- **`/exams`** - Configure and take exams from processed documents
-
-**Note:** No Dashboard or History sections in current architecture.
-
-### Next.js Application Structure (`website/`)
-
-**Core Directories:**
-- **`app/`** - Next.js App Router
-  - `(dashboard)/` - Route group for authenticated pages (documents, exams, history)
-  - `actions/` - Server Actions (e.g., `documents.ts`)
-  - `layout.tsx` - Root layout with theme provider
-  - `page.tsx` - Dashboard/landing page
-- **`lib/`** - Business logic and utilities
-  - `db/` - Firestore initialization and data access (`firebase.ts`, `documents.ts`)
-  - `services/` - Core business logic (`ai.ts` for Gemini, `pdf.ts`)
-  - `types/` - TypeScript interfaces and Zod schemas (`index.ts`)
-  - `utils.ts` - Helper utilities (e.g., `cn()` for Tailwind)
-- **`components/`** - React components
-  - `ui/` - Shadcn UI primitives (Radix-based)
-  - `documents/` - Feature-specific components
-  - `app-sidebar.tsx`, `mode-toggle.tsx`, etc.
+```
+User → Next.js (Port 3000)
+         ↓
+    Server Action (processDocument)
+         ↓
+    FastAPI Service (Port 8000) → Gemini API
+         ↓
+    Firestore (status updates)
+         ↓
+    Next.js UI (polling every 2-3s)
+```
 
 ### Tech Stack
-- **Framework:** Next.js 16 (App Router, Server Actions)
-- **Language:** TypeScript (strict mode, no `any`)
-- **UI:** React 19, Tailwind CSS 4, Shadcn UI (Radix Primitives)
-- **State:** Zustand (client), Server Components (server)
-- **Database:** Google Cloud Firestore (via `firebase-admin`)
-- **AI:** Google Gemini API (`@google/generative-ai`)
-- **Forms:** React Hook Form + Zod validation
-- **Icons:** Lucide React
 
-### Data Flow Pattern
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Shadcn UI
+- **Backend**: FastAPI (Python), Firebase Admin SDK
+- **Database**: Google Cloud Firestore
+- **Storage**: Google Cloud Storage (GCS)
+- **AI**: Google Gemini API (gemini-1.5-flash model)
+- **State Management**: Zustand (client), Server Components (server)
+- **Forms**: React Hook Form + Zod validation
 
-**Server Actions for Mutations:**
-- All data mutations use Server Actions (files named `actions.ts`)
-- Patterns:
-  - `app/actions/documents.ts`: `uploadDocument`, `processDocument`, `deleteDocument`
-  - `app/actions/prompts.ts`: `createSystemPrompt`, `updateSystemPrompt`, `deleteSystemPrompt`, `createCustomPrompt`, `updateCustomPrompt`, `deleteCustomPrompt`
-- Always use Zod for input validation
+### Next.js Directory Structure
+
+**Key directories in `website/`:**
+
+- **`app/`** - Next.js App Router
+  - `(dashboard)/` - Authenticated routes: `/documents`, `/prompts`, `/exams`
+  - `actions/` - Server Actions for mutations (documents.ts, prompts.ts, exams.ts)
+  - `api/` - API routes (e.g., SSE streaming for AI explanations)
+  - `layout.tsx` - Root layout with theme provider
+  - `page.tsx` - Landing page
+
+- **`lib/`** - Business logic
+  - `db/` - Firestore access layer
+    - `firebase.ts` - Firebase Admin initialization and collection() helper
+    - `documents.ts`, `prompts.ts` - Data access functions
+  - `services/` - Core business logic
+    - `ai.ts` - Gemini API integration
+    - `pdf.ts` - PDF parsing utilities
+  - `types/` - TypeScript interfaces and Zod schemas
+  - `stores/` - Zustand stores (exam state management)
+
+- **`components/`** - React components
+  - `ui/` - Shadcn UI primitives (Radix-based)
+  - `documents/`, `prompts/`, `exams/` - Feature-specific components
+
+### Python Processing Service Structure
+
+**Key files in `processing-service/`:**
+
+- **`app/`**
+  - `main.py` - FastAPI app, endpoints, rate limiting
+  - `config.py` - Environment configuration
+  - `models.py` - Pydantic models
+  - `services/` - Business logic (processor.py, firestore.py, gemini.py, storage.py)
+  - `middleware/` - Request middleware
+
+## Data Flow Patterns
+
+### Server Actions Pattern
+
+All mutations use Server Actions in `app/actions/`:
+
+```typescript
+// app/actions/documents.ts
+export async function uploadDocument(formData: FormData) {
+  // 1. Validate with Zod
+  // 2. Perform operation
+  // 3. Revalidate path
+  // 4. Return { success, error, data }
+}
+```
+
+Always:
+- Use Zod for input validation
 - Return standardized responses: `{ success?: boolean, error?: string, data?: T }`
+- Call `revalidatePath()` after mutations
+- Use `'use server'` directive
 
-**Server Components for Fetching:**
-- Use Server Components to fetch data from Firestore
-- Direct database access via `lib/db/firebase.ts` exported `db` instance
+### Firestore Access Pattern
 
-**Client-Side Status Polling:**
-- Document cards poll Firestore every 2-3 seconds when status is `processing`
-- Use `useEffect` with `setInterval` or React Query
-- Update UI with progress indicators (`progress`, `currentStep` fields)
-- Stop polling when status becomes `ready` or `failed`
+Use the `collection()` helper for prefixed collection names:
 
-**Firestore Collections:**
-- `documents` - Document metadata
-  - Fields: `id`, `title`, `status` (uploaded | processing | ready | failed), `filePath`, `questionCount`, `createdAt`, `progress`, `currentStep`, `error`
+```typescript
+import { db, collection } from '@/lib/db/firebase';
+
+// Access collection with automatic prefixing
+const docsRef = db.collection(collection('documents'));
+const doc = await docsRef.doc(id).get();
+```
+
+**Collections:**
+- `documents` - Document metadata (status, progress, error)
   - Subcollection: `documents/{id}/questions`
-- `system-prompts` - System prompts (role/behavior instructions)
-  - Fields: `id`, `name`, `content`, `createdAt`, `updatedAt`
-- `custom-prompts` - Custom prompts (user-specific instructions)
-  - Fields: `id`, `name`, `content`, `createdAt`, `updatedAt`
+- `system-prompts` - System prompts (role/behavior)
+- `custom-prompts` - Custom prompts (user-specific)
 - `exam-sessions` - Exam results and history
-  - Fields: `id`, `documentId`, `userId`, `answers`, `score`, `startedAt`, `completedAt`
-- Collection names use `kebab-case`
 
 ### Document Processing Workflow
 
-**Three-Phase Process:**
+**Three-phase process:**
 
-1. **Upload Phase** (`uploadDocument` Server Action):
-   - User uploads PDF via upload dialog
-   - Save PDF to local filesystem (`uploads/` directory)
-   - Create document record in Firestore with `status: 'uploaded'`
-   - File stored as `{timestamp}-{sanitized-filename}.pdf`
-   - Document appears as card with "Process" button
+1. **Upload Phase** (`uploadDocument` Server Action)
+   - User uploads PDF via dialog
+   - PDF saved to GCS bucket
+   - Document record created in Firestore with `status: 'uploaded'`
 
-2. **Prompt Selection Phase** (via Process Dialog):
+2. **Prompt Selection** (Process Dialog)
    - User clicks "Process" button on uploaded document card
-   - Dialog opens with two steps:
-     - **Step 1:** Select existing System Prompt OR create new inline
-     - **Step 2:** Select existing Custom Prompt OR create new inline
-   - User confirms to start processing
+   - Two-step dialog: select System Prompt, then Custom Prompt
+   - Both can be selected from existing or created inline
 
-3. **Processing Phase** (`processDocument` Server Action):
-   - Accept: `docId`, `systemPromptId`, `customPromptId`
-   - Fetch prompts from Firestore (`system-prompts`, `custom-prompts` collections)
-   - Read stored PDF from filesystem
-   - Combine: PDF + System Prompt + Custom Prompt → Send to Gemini API
-   - Update document status to `processing` immediately
-   - Save processing progress to Firestore (`progress`, `currentStep`)
-   - Frontend polls for status updates every 2-3 seconds
-   - Parse Gemini response and save questions to subcollection
-   - Update status to `ready` on success, `failed` on error
+3. **Processing Phase** (`processDocument` Server Action)
+   - Next.js calls FastAPI service at `/jobs/process`
+   - Python service fetches PDF from GCS
+   - Combines PDF + System Prompt + Custom Prompt → Gemini API
+   - Updates Firestore with progress (`progress`, `currentStep`)
+   - Frontend polls Firestore every 2-3 seconds
+   - Questions saved to `documents/{id}/questions` subcollection
+   - Status becomes `ready` or `failed`
 
-**Key Files:**
-- `app/actions/documents.ts` - Upload and processing Server Actions
-- `app/actions/prompts.ts` - CRUD operations for prompts
-- `lib/services/ai.ts` - Gemini API integration with prompts
-- `lib/db/prompts.ts` - Firestore prompt queries
-- `lib/types/index.ts` - Interfaces for Document, Question, Prompt, Exam
-- `components/documents/process-dialog.tsx` - Prompt selection UI
-- `components/documents/document-card.tsx` - Status polling and progress display
+**Key files:**
+- `website/app/actions/documents.ts` - Upload and processing triggers
+- `processing-service/app/services/processor.py` - Core processing logic
+- `processing-service/app/services/gemini.py` - Gemini API calls
+- `website/components/documents/process-dialog.tsx` - Prompt selection UI
+- `website/components/documents/document-card.tsx` - Status polling
 
-## Design System & Styling
+### Status Polling Pattern
 
-### Theme: Professional Admin Dashboard
-- **Design Philosophy:** Clean, enterprise-grade minimalism with emphasis on data readability
-- **Subtle Gradients:** Diagonal gradient backgrounds for visual depth
-- **Smooth Animations:** All interactive elements have polished hover and active states
-- **Strong Contrast:** Accessible color combinations in both light and dark modes
-- **Collapsible Sidebar:** Icon-only mode for maximized screen space
+Document cards poll Firestore when `status === 'processing'`:
 
-### Color Palette
-**Dark Mode:**
-- Background: `linear-gradient(135deg, #0F1117 0%, #1C1F26 50%, #0F1117 100%)`
-- Card: `#1C1F26`
-- Border: `#2E3342`
-- Text Primary: `#FFFFFF`
-- Text Muted: `#A1A7B8`
-- Accent Primary: `#5750F1` (Purple)
-- Success: `#3FD97F` (Green)
-- Warning: `#FF9C55` (Orange)
-- Danger: `#F87171` (Red)
+```typescript
+useEffect(() => {
+  if (document.status !== 'processing') return;
 
-**Light Mode:**
-- Background: `linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 50%, #E5E7EB 100%)`
-- Card: `#FFFFFF`
-- Border: `#E5E7EB`
-- Text Primary: `#111827`
-- Text Muted: `#6B7280`
-- Accent Primary: `#5750F1` (Purple - consistent)
-- Success: `#10B981` (Green)
-- Warning: `#F59E0B` (Orange)
-- Danger: `#EF4444` (Red)
+  const interval = setInterval(async () => {
+    // Fetch latest document status from Firestore
+    // Update local state
+  }, 2000); // Poll every 2 seconds
 
-### Typography
-- **Font:** Inter or system sans-serif stack
-- **Headings:** `font-semibold` to `font-bold`
-- **Body:** `font-normal` (400) and `font-medium` (500)
-- **Hierarchy:** Clear sizing from `text-sm` to `text-3xl`
+  return () => clearInterval(interval);
+}, [document.status]);
+```
 
-### Component Styling Standards
-**Cards:**
-- Structure: `bg-card border border-border rounded-[10px] shadow-sm p-6`
-- Hover: `hover:shadow-lg hover:-translate-y-1 hover:border-primary/30`
-- Transitions: `transition-all duration-300 ease-in-out`
-- Padding: `p-6` or `px-7.5 py-7.5` for larger cards
+## Environment Variables
 
-**Buttons:**
-- Radius: `rounded-md` to `rounded-lg` (6-8px)
-- Primary: Purple `#5750F1` background
-- Hover: `hover:scale-105 hover:shadow-lg hover:shadow-primary/20`
-- Active: `active:scale-95`
-- Transitions: `transition-all duration-300 ease-in-out`
+### Next.js Website (`.env.local`)
 
-**Menus & Dropdowns:**
-- Menu items slide right on hover: `hover:pl-3`
-- Transitions: `transition-all duration-200`
-- Smooth open/close animations with fade and zoom
+```env
+GCP_PROJECT_ID=your-project-id
+GCS_BUCKET_NAME=your-bucket-name
+GEMINI_API_KEY=your-api-key
+FIRESTORE_COLLECTION_PREFIX=superexam-
+PROCESSING_SERVICE_URL=http://localhost:8000
+GEMINI_MODEL=gemini-1.5-flash
+```
 
-**Layout Grid:**
-- Responsive: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`
-- Gaps: `gap-4 md:gap-6 2xl:gap-7.5`
-- 12-column support for complex layouts
+### Python Processing Service (`.env`)
 
-**Tables:**
-- Striped rows: `even:bg-gray-2 dark:even:bg-dark-2`
-- Headers centered, numbers right-aligned
+```env
+GEMINI_API_KEY=your-api-key
+GCS_BUCKET_NAME=your-bucket-name
+GCP_PROJECT_ID=your-project-id
+FIRESTORE_COLLECTION_PREFIX=superexam-
+GEMINI_MODEL=gemini-1.5-flash
+```
 
-### Implementation Notes
-- Use `cn()` utility for conditional Tailwind classes
-- Follow Shadcn UI patterns for accessibility
-- Strictly adhere to design tokens in `docs/design_spec.md`
-- Subtle gradient backgrounds with fixed attachment
-- All hover states must include smooth animations (300ms for major, 200ms for minor)
-- Sidebar is collapsible via `<Sidebar collapsible="icon">` with SidebarTrigger button
-- Interactive elements should feel responsive with scale/translate/shadow effects
+**Authentication:**
+- Uses Google Application Default Credentials (ADC)
+- Run `gcloud auth application-default login` for local development
 
 ## Coding Standards
 
 ### Naming Conventions
-- **Files:** `kebab-case.tsx` (e.g., `app-sidebar.tsx`)
-- **Components:** `PascalCase` (e.g., `AppSidebar`)
-- **Functions/Variables:** `camelCase` (e.g., `uploadDocument`)
-- **Server Actions:** `verbNoun` pattern (e.g., `processDocument`, `deleteDocument`)
+
+- **Files**: `kebab-case.tsx` (e.g., `process-dialog.tsx`)
+- **Components**: `PascalCase` (e.g., `ProcessDialog`)
+- **Functions/Variables**: `camelCase` (e.g., `uploadDocument`)
+- **Server Actions**: `verbNoun` pattern (e.g., `processDocument`, `deleteDocument`)
+- **Firestore Collections**: `kebab-case` with prefix (e.g., `superexam-documents`)
 
 ### TypeScript
+
 - Strict typing enforced - **never use `any`**
 - Use Zod for runtime validation (especially Server Action inputs)
-- Define types in `lib/types/index.ts`
-- Interfaces for domain objects (Document, Question, Exam)
-
-### File Organization
-- Server Actions in `app/actions/` or co-located `actions.ts` files
-- Business logic in `lib/services/` (framework-agnostic)
-- Data access in `lib/db/` (Firestore helpers)
-- Shared types in `lib/types/`
+- Define interfaces in `lib/types/index.ts`
+- Use type imports: `import type { Document } from '@/lib/types'`
 
 ### Error Handling
+
 - Use `try/catch` in Server Actions
 - Return standardized error responses: `{ error: string }`
-- Log errors to console with `console.error()`
-- Revalidate paths after mutations with `revalidatePath()`
+- Log errors with `console.error()`
+- Always call `revalidatePath()` after mutations
 
-## Environment Variables
+### Design System
 
-Required environment variables (configure in `.env.local`):
-- `GEMINI_API_KEY` - Google Gemini API key
-- `GCP_PROJECT_ID` - Google Cloud Project ID (optional, uses ADC if not set)
+**Professional admin dashboard theme:**
+- Dark mode: Diagonal gradient backgrounds (`135deg`)
+- Smooth animations on all interactive elements (300ms major, 200ms minor)
+- Hover effects: scale, translate, shadow (e.g., `hover:scale-105 hover:-translate-y-1`)
+- Card structure: `bg-card border border-border rounded-[10px] shadow-sm p-6`
+- Use `cn()` utility for conditional Tailwind classes
+- Collapsible sidebar with `<Sidebar collapsible="icon">`
 
-Firebase Admin SDK uses Application Default Credentials (ADC) or explicit project ID.
+## Key Integration Points
 
-## Current Implementation Status
+### Next.js ↔ Python Service
 
-**Completed (Epic 1 & 2 - Partial):**
-- Next.js project setup with Tailwind, Shadcn UI
-- Professional admin dashboard design with animations
-- Collapsible sidebar navigation
-- Document upload and storage to local filesystem
-- Document listing with status indicators
+**Next.js triggers processing:**
 
-**In Progress (Epic 2, 3, 4):**
-- **Epic 2 Refactor:** Separate processing from upload
-  - Process button on uploaded documents
-  - Status polling for processing progress
-- **Epic 3:** Prompt Management
-  - Create Prompts page (`/prompts`)
-  - CRUD operations for system and custom prompts
-  - Prompt selection in processing workflow
-- **Epic 4:** Document Processing with Prompts
-  - Process dialog with prompt selection
-  - Backend Gemini API call with prompts
-  - Real-time status updates and polling
+```typescript
+// website/app/actions/documents.ts
+const response = await fetch(`${PROCESSING_SERVICE_URL}/jobs/process`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ doc_id, system_prompt_id, custom_prompt_id, schema })
+});
+```
 
-**Planned (Epic 5 & 6):**
-- **Epic 5:** Exam Module
-  - Exam configuration and quiz interface
-  - Timer, scoring, and results display
-- **Epic 6:** Welcome Page
-  - Landing page at `/` with stats and CTAs
+**Python service updates Firestore:**
 
-See `docs/project_plan.md` for detailed roadmap and epic breakdown.
+```python
+# processing-service/app/services/processor.py
+await firestore_service.update_document(doc_id, {
+    'status': 'processing',
+    'progress': 50,
+    'currentStep': 'Generating questions...'
+})
+```
 
-## Key Patterns & Conventions
+### Gemini API Integration
 
-### Server-First Development
-- Prioritize Server Components (RSC) for data fetching
-- Use Client Components (`'use client'`) only for interactivity
-- Keep business logic in `lib/services/` for testability
+- Model: `gemini-1.5-flash` (multimodal)
+- Input: PDF file buffer + text prompts
+- Output: JSON array of questions (validated with JSON Schema)
+- Response cleaning: Strip markdown code blocks from JSON
 
-### Database Access
-- Import `db` from `lib/db/firebase.ts`
-- Use Firestore `batch()` for multi-document writes
-- Collection references: `db.collection('documents')`
-- Subcollections: `docRef.collection('questions')`
+### Google Cloud Storage
 
-### AI Integration
-- Gemini 1.5 Flash model for question generation
-- Multimodal input: PDF buffer + text prompt
-- Clean JSON responses (strip markdown code blocks)
-- Handle rate limits and API errors gracefully
+- Store PDFs with naming: `{timestamp}-{sanitized-filename}.pdf`
+- Python service reads from GCS bucket
+- Both services use same bucket (configured via `GCS_BUCKET_NAME`)
 
-### Form Handling
-- React Hook Form + Zod resolver for validation
-- Server Actions receive `FormData` or validated objects
-- Use `revalidatePath()` after successful mutations
-- Toast notifications via Sonner (`sonner` package)
+## Development Workflow
 
-## Documentation Reference
+1. **Start both services locally:**
+   ```bash
+   # Terminal 1
+   cd website && npm run dev
 
-- **`docs/project_plan.md`** - Features, epics, and implementation progress
-- **`docs/design_spec.md`** - Strict design system and architecture patterns
-- **`GEMINI.md`** - Historical context (Gemini-specific development notes)
+   # Terminal 2
+   cd processing-service && uvicorn app.main:app --reload --port 8000
+   ```
+
+2. **Authentication setup:**
+   ```bash
+   gcloud auth application-default login
+   ```
+
+3. **Testing document processing:**
+   - Upload PDF via Next.js UI (`/documents`)
+   - Click "Process" button, select prompts
+   - Watch Firestore for status updates
+   - Check Python service logs for processing details
+
+## Deployment Architecture
+
+**Google Cloud Run:**
+- `superexam-website` - Next.js service
+- `superexam-api` - Python FastAPI service
+
+**Deploy script (`deploy.sh`):**
+- Builds Docker images for both services
+- Pushes to Google Artifact Registry
+- Deploys to Cloud Run
+- Use `--full` flag to update environment variables
+
+## Important Notes
+
+- **Collection Prefixes**: Both services must use same `FIRESTORE_COLLECTION_PREFIX`
+- **Server-First**: Prioritize Server Components for data fetching
+- **Client Components**: Only use `'use client'` for interactivity
+- **Business Logic**: Keep in `lib/services/` for testability
+- **Rate Limiting**: Python service implements Firestore-based rate limiting
+- **Real-time Updates**: UI polls Firestore, not the Python service directly
