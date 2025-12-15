@@ -3,7 +3,7 @@ import time
 import logging
 import os
 from typing import Optional
-import google.generativeai as genai
+from google import genai
 from pydantic import BaseModel, Field
 from app.config import settings
 from app.services.pdf_service import pdf_service
@@ -39,8 +39,7 @@ class QuestionsResponse(BaseModel):
 
 class GeminiService:
     def __init__(self):
-        genai.configure(api_key=settings.gemini_api_key)
-        self.model = genai.GenerativeModel(settings.gemini_model)
+        self.client = genai.Client(api_key=settings.gemini_api_key)
 
     def generate_questions(
         self,
@@ -92,17 +91,15 @@ DOCUMENT CONTENT:
 
             # Generate content
             logger.info(f"Sending request to Gemini API with {len(full_prompt)} characters")
-            
-            # Configure structured output using Pydantic model converted to JSON Schema
-            generation_config = {
-                "response_mime_type": "application/json",
-                "response_json_schema": QuestionsResponse.model_json_schema()
-            }
 
             # Note: By default, generate_content waits for the full response (no stream=True)
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=generation_config
+            response = self.client.models.generate_content(
+                model=settings.gemini_model,
+                contents=full_prompt,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_json_schema": QuestionsResponse.model_json_schema()
+                }
             )
             
             # Check for safety blocks or empty responses
