@@ -100,16 +100,27 @@ async def process_job_logic(job_id: str):
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}", exc_info=True)
         
-        firestore_service.update_job(job_id, {
-            "status": JobStatus.FAILED,
-            "completed_at": int(time.time()),
-            "error": str(e)
-        })
+        # Try to update job status
+        try:
+            firestore_service.update_job(job_id, {
+                "status": JobStatus.FAILED,
+                "completed_at": int(time.time()),
+                "error": str(e)
+            })
+            logger.info(f"Updated job {job_id} status to FAILED")
+        except Exception as update_job_error:
+            logger.error(f"Failed to update job status to FAILED: {update_job_error}")
         
-        firestore_service.update_status(
-            doc_id,
-            status="failed",
-            error=f"Processing failed: {str(e)}"
-        )
+        # Try to update document status
+        try:
+            firestore_service.update_status(
+                doc_id,
+                status="failed",
+                error=f"Processing failed: {str(e)}"
+            )
+            logger.info(f"Updated document {doc_id} status to FAILED")
+        except Exception as update_doc_error:
+            logger.error(f"Failed to update document status to FAILED: {update_doc_error}")
+
         # Re-raise to let the caller (API) know it failed
         raise e
