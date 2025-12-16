@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Gemini 3 Pro limits (gemini-3-pro-preview)
 MAX_OUTPUT_TOKENS = 65536  # 64k max output tokens
-REQUEST_TIMEOUT = 600  # 10 minutes for large documents
+REQUEST_TIMEOUT_MS = 60 * 10 * 1000  # 10 minutes for large documents
 PAGES_PER_BATCH = 600  # Process 600 pages at a time
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
@@ -50,11 +50,10 @@ class GeminiService:
     def __init__(self):
         # Configure HTTP options with timeout
         http_options = types.HttpOptions(
-            timeout=REQUEST_TIMEOUT,
+            timeout=REQUEST_TIMEOUT_MS,
         )
         self.client = genai.Client(
-            api_key=settings.gemini_api_key,
-            http_options=http_options
+            api_key=settings.gemini_api_key, http_options=http_options
         )
 
     def _split_text_by_pages(
@@ -184,7 +183,9 @@ class GeminiService:
 
         # This should never happen as we always catch exceptions, but satisfies type checker
         if last_error is None:
-            raise RuntimeError(f"Batch {batch_num}/{total_batches} failed without capturing error")
+            raise RuntimeError(
+                f"Batch {batch_num}/{total_batches} failed without capturing error"
+            )
         raise last_error
 
     def _parse_gemini_response(self, text_response: str) -> list[dict]:
