@@ -78,13 +78,19 @@ async def process_job_logic(job_id: str):
 
         # Step 5: Generate questions
         firestore_service.update_status(doc_id, status="processing", progress=40, current_step="Generating questions...")
-        
+
         logger.info(f"Calling Gemini API for job {job_id}")
+
+        # Define progress callback to update Firestore in real-time
+        def update_progress(message: str):
+            firestore_service.update_status(doc_id, status="processing", progress=50, current_step=message)
+
         questions = gemini_service.generate_questions(
             pdf_buffer=pdf_buffer,
             system_prompt=system_prompt,
             custom_prompt=custom_prompt,
-            schema=job.get("schema")
+            schema=job.get("schema"),
+            progress_callback=update_progress
         )
 
         # Step 5: Save results
