@@ -160,23 +160,36 @@ export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
 
       <CardFooter className="pt-3 border-t gap-2">
         <div className="flex w-full gap-2">
-          {doc.status === 'uploaded' ? (
-              <div className="flex-1">
-                <ProcessDocumentDialog docId={doc.id} docTitle={doc.title} />
-              </div>
-          ) : (
-              <Button
-              className="flex-1"
-              disabled={doc.status !== 'ready'}
-              asChild
-              >
+          {/* Process/Reprocess button for uploaded or failed documents */}
+          {(doc.status === 'uploaded' || doc.status === 'failed') && (
+            <div className="flex-1">
+              <ProcessDocumentDialog
+                docId={doc.id}
+                docTitle={doc.title}
+                buttonText={doc.status === 'failed' ? 'Reprocess' : 'Process'}
+              />
+            </div>
+          )}
+
+          {/* Take Exam button - only shown when ready */}
+          {doc.status === 'ready' && (
+            <Button className="flex-1" asChild>
               <Link href={`/exams/${doc.id}/configure`}>
                 <Play className="mr-2 h-4 w-4" />
                 Take Exam
               </Link>
-              </Button>
+            </Button>
           )}
 
+          {/* Processing state - show disabled placeholder */}
+          {doc.status === 'processing' && (
+            <Button className="flex-1" disabled>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </Button>
+          )}
+
+          {/* Info button for ready documents */}
           {doc.status === 'ready' && (
             <Button
               variant="ghost"
@@ -190,6 +203,7 @@ export function DocumentCard({ doc: initialDoc }: DocumentCardProps) {
             </Button>
           )}
 
+          {/* Delete button - always available */}
           <Button
             variant="ghost"
             size="icon-sm"

@@ -31,9 +31,10 @@ import { SystemPrompt, CustomPrompt } from "@/lib/types"
 interface ProcessDocumentDialogProps {
   docId: string
   docTitle: string
+  buttonText?: string
 }
 
-export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialogProps) {
+export function ProcessDocumentDialog({ docId, docTitle, buttonText = "Process with AI" }: ProcessDocumentDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -182,7 +183,7 @@ export function ProcessDocumentDialog({ docId, docTitle }: ProcessDocumentDialog
       <DialogTrigger asChild>
         <Button className="w-full">
           <Bot className="mr-2 h-4 w-4" />
-          Process with AI
+          {buttonText}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
