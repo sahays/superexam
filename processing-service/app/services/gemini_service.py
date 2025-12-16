@@ -152,6 +152,16 @@ class GeminiService:
                     },
                 )
 
+                # Log finish reason for debugging
+                finish_reason = None
+                if hasattr(response, 'candidates') and response.candidates:
+                    finish_reason = response.candidates[0].finish_reason if response.candidates[0] else None
+                    logger.info(f"Batch {batch_num}/{total_batches} finish_reason: {finish_reason}")
+
+                # Log response size
+                response_text = response.text if hasattr(response, 'text') else ""
+                logger.info(f"Batch {batch_num}/{total_batches} response size: {len(response_text)} chars")
+
                 # Check for safety blocks or empty responses
                 if not response.parts:
                     error_msg = "Gemini returned an empty response."
@@ -163,8 +173,17 @@ class GeminiService:
                             error_msg = f"Gemini blocked the request: {response.prompt_feedback.block_reason}"
                     raise ValueError(error_msg)
 
-                logger.info(f"Batch {batch_num}/{total_batches} completed successfully")
-                return response.text
+                # Check for MAX_TOKENS - incomplete response
+                if finish_reason and str(finish_reason).upper() in ['MAX_TOKENS', 'LENGTH']:
+                    logger.warning(
+                        f"Batch {batch_num}/{total_batches} hit MAX_TOKENS limit. "
+                        f"Response may be incomplete ({len(response_text)} chars). "
+                        f"Consider reducing batch size or splitting further."
+                    )
+                    # Still return the partial response - we'll handle it in validation
+
+                logger.info(f"Batch {batch_num}/{total_batches} completed with finish_reason: {finish_reason}")
+                return response_text
 
             except Exception as e:
                 last_error = e
@@ -206,24 +225,36 @@ class GeminiService:
         if not json_string:
             raise ValueError("Gemini returned empty text content")
 
+        # Log first and last 500 chars for debugging
+        logger.debug(f"Response start: {json_string[:500]}")
+        logger.debug(f"Response end: {json_string[-500:]}")
+
         # Parse and validate JSON response using Pydantic model
         try:
             # Validate response against schema
             validated_response = QuestionsResponse.model_validate_json(json_string)
+            question_count = len(validated_response.questions)
+            logger.info(f"Successfully validated {question_count} questions")
             return [q.model_dump() for q in validated_response.questions]
         except json.JSONDecodeError as e:
             logger.error(
-                f"Failed to parse JSON from Gemini: {e}. Raw response: {text_response[:200]}..."
+                f"Failed to parse JSON from Gemini: {e}. "
+                f"Error at line {e.lineno}, column {e.colno}. "
+                f"Response start: {text_response[:500]}... "
+                f"Response end: ...{text_response[-500:]}"
             )
-            raise ValueError(f"Gemini returned invalid JSON: {str(e)}")
+            raise ValueError(f"Gemini returned invalid JSON at position {e.pos}: {str(e)}")
         except Exception as e:
             logger.error(f"Failed to validate response against schema: {e}")
+            logger.error(f"Response preview: {json_string[:1000]}...")
             # Fallback: try manual parsing for backward compatibility
             try:
                 response_data = json.loads(json_string)
                 if isinstance(response_data, dict) and "questions" in response_data:
+                    logger.warning(f"Using fallback parsing, got {len(response_data['questions'])} questions")
                     return response_data["questions"]
                 elif isinstance(response_data, list):
+                    logger.warning(f"Using fallback parsing (list format), got {len(response_data)} items")
                     return response_data
                 else:
                     raise ValueError(
@@ -231,6 +262,7 @@ class GeminiService:
                     )
             except Exception as fallback_error:
                 logger.error(f"Fallback parsing also failed: {fallback_error}")
+                logger.error(f"JSON string length: {len(json_string)} chars")
                 raise ValueError(f"Failed to parse Gemini response: {str(e)}")
 
     def generate_questions(
