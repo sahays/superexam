@@ -52,11 +52,23 @@ def health_check(request: Request):
 def create_process_job(request: Request, job_request: ProcessJobRequest, background_tasks: BackgroundTasks):
     """
     Create a new document processing job
+
+    Rate limits:
+    - 1 request per minute
+    - 10 requests per hour
+    - 23 requests per day
     """
-    # Rate limit: 5 requests per minute
     client_ip = request.client.host if request.client else "unknown"
-    if not firestore_service.check_rate_limit(f"rate_limit:process:{client_ip}", limit=5, window_seconds=60):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again later.")
+
+    # Check multiple rate limit windows
+    if not firestore_service.check_rate_limit(f"rate_limit:process:minute:{client_ip}", limit=1, window_seconds=60):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded: 1 request per minute. Try again later.")
+
+    if not firestore_service.check_rate_limit(f"rate_limit:process:hour:{client_ip}", limit=10, window_seconds=3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded: 10 requests per hour. Try again later.")
+
+    if not firestore_service.check_rate_limit(f"rate_limit:process:day:{client_ip}", limit=23, window_seconds=86400):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded: 23 requests per day. Try again later.")
 
     try:
         job_id = str(uuid.uuid4())

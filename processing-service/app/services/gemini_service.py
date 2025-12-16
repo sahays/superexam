@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Gemini 3 Pro limits (gemini-3-pro-preview)
 MAX_OUTPUT_TOKENS = 65536  # 64k max output tokens
 REQUEST_TIMEOUT_MS = 60 * 10 * 1000  # 10 minutes for large documents
-PAGES_PER_BATCH = 600  # Process 600 pages at a time
+PAGES_PER_BATCH = 100  # Process 600 pages at a time
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
 
@@ -154,13 +154,21 @@ class GeminiService:
 
                 # Log finish reason for debugging
                 finish_reason = None
-                if hasattr(response, 'candidates') and response.candidates:
-                    finish_reason = response.candidates[0].finish_reason if response.candidates[0] else None
-                    logger.info(f"Batch {batch_num}/{total_batches} finish_reason: {finish_reason}")
+                if hasattr(response, "candidates") and response.candidates:
+                    finish_reason = (
+                        response.candidates[0].finish_reason
+                        if response.candidates[0]
+                        else None
+                    )
+                    logger.info(
+                        f"Batch {batch_num}/{total_batches} finish_reason: {finish_reason}"
+                    )
 
                 # Log response size
-                response_text = response.text if hasattr(response, 'text') else ""
-                logger.info(f"Batch {batch_num}/{total_batches} response size: {len(response_text)} chars")
+                response_text = response.text if hasattr(response, "text") else ""
+                logger.info(
+                    f"Batch {batch_num}/{total_batches} response size: {len(response_text)} chars"
+                )
 
                 # Check for safety blocks or empty responses
                 if not response.parts:
@@ -174,7 +182,10 @@ class GeminiService:
                     raise ValueError(error_msg)
 
                 # Check for MAX_TOKENS - incomplete response
-                if finish_reason and str(finish_reason).upper() in ['MAX_TOKENS', 'LENGTH']:
+                if finish_reason and str(finish_reason).upper() in [
+                    "MAX_TOKENS",
+                    "LENGTH",
+                ]:
                     logger.warning(
                         f"Batch {batch_num}/{total_batches} hit MAX_TOKENS limit. "
                         f"Response may be incomplete ({len(response_text)} chars). "
@@ -182,7 +193,9 @@ class GeminiService:
                     )
                     # Still return the partial response - we'll handle it in validation
 
-                logger.info(f"Batch {batch_num}/{total_batches} completed with finish_reason: {finish_reason}")
+                logger.info(
+                    f"Batch {batch_num}/{total_batches} completed with finish_reason: {finish_reason}"
+                )
                 return response_text
 
             except Exception as e:
@@ -243,7 +256,9 @@ class GeminiService:
                 f"Response start: {text_response[:500]}... "
                 f"Response end: ...{text_response[-500:]}"
             )
-            raise ValueError(f"Gemini returned invalid JSON at position {e.pos}: {str(e)}")
+            raise ValueError(
+                f"Gemini returned invalid JSON at position {e.pos}: {str(e)}"
+            )
         except Exception as e:
             logger.error(f"Failed to validate response against schema: {e}")
             logger.error(f"Response preview: {json_string[:1000]}...")
@@ -251,10 +266,14 @@ class GeminiService:
             try:
                 response_data = json.loads(json_string)
                 if isinstance(response_data, dict) and "questions" in response_data:
-                    logger.warning(f"Using fallback parsing, got {len(response_data['questions'])} questions")
+                    logger.warning(
+                        f"Using fallback parsing, got {len(response_data['questions'])} questions"
+                    )
                     return response_data["questions"]
                 elif isinstance(response_data, list):
-                    logger.warning(f"Using fallback parsing (list format), got {len(response_data)} items")
+                    logger.warning(
+                        f"Using fallback parsing (list format), got {len(response_data)} items"
+                    )
                     return response_data
                 else:
                     raise ValueError(

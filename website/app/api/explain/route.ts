@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db, collection } from "@/lib/db/firebase";
 import { NextRequest } from "next/server";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
@@ -13,6 +14,19 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 2 requests per minute
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+                     request.headers.get('x-real-ip') ||
+                     'unknown';
+
+    const rateLimitCheck = await checkRateLimit(`rate_limit:explain:minute:${clientIp}`, 2, 60);
+    if (!rateLimitCheck.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded: 2 requests per minute. Please wait." }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const { documentId, questionId, promptId, promptType } = await request.json();
 
     if (!documentId || !questionId || !promptId || !promptType) {
