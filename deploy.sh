@@ -83,6 +83,10 @@ else
       --platform managed \
       --region $REGION \
       --project $PROJECT_ID \
+      --execution-environment=gen2 \
+      --timeout=30m \
+      --cpu 2 \
+      --memory 2Gi \
       --allow-unauthenticated \
       --command "uvicorn" \
       --args "app.main:app,--host,0.0.0.0,--port,8080" \
@@ -94,6 +98,8 @@ else
       --platform managed \
       --region $REGION \
       --project $PROJECT_ID \
+      --execution-environment=gen2 \
+      --timeout=30m \
       --allow-unauthenticated \
       --set-env-vars "PROCESSING_SERVICE_URL=$PROCESSING_SERVICE_URL,GCS_BUCKET_NAME=$GCS_BUCKET_NAME,GEMINI_API_KEY=$GEMINI_API_KEY,FIRESTORE_COLLECTION_PREFIX=$FIRESTORE_COLLECTION_PREFIX,GCP_PROJECT_ID=$PROJECT_ID,GEMINI_MODEL=$GEMINI_MODEL" || { echo "Website deployment failed"; exit 1; }
 fi
