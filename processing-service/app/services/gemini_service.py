@@ -5,6 +5,7 @@ import os
 import re
 from typing import Optional, Callable
 from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 from app.config import settings
 from app.services.pdf_service import pdf_service
@@ -47,11 +48,18 @@ class QuestionsResponse(BaseModel):
 
 class GeminiService:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.gemini_api_key)
+        # Configure HTTP options with timeout
+        http_options = types.HttpOptions(
+            timeout=REQUEST_TIMEOUT,
+        )
+        self.client = genai.Client(
+            api_key=settings.gemini_api_key,
+            http_options=http_options
+        )
 
     def _split_text_by_pages(
         self, pdf_text: str, pages_per_batch: int
-    ) -> list[tuple[str, int, int]]:
+    ) -> list[tuple[str, int | None, int | None]]:
         """
         Split PDF text into batches by page markers.
 
@@ -67,10 +75,10 @@ class GeminiService:
         pages = re.split(page_pattern, pdf_text)
 
         # pages list is: ['', '1', 'content1', '2', 'content2', ...]
-        batches = []
-        current_batch = []
-        current_start = None
-        current_end = None
+        batches: list[tuple[str, int | None, int | None]] = []
+        current_batch: list[str] = []
+        current_start: int | None = None
+        current_end: int | None = None
 
         i = 1  # Start after empty first element
         while i < len(pages):
@@ -122,7 +130,7 @@ class GeminiService:
         Returns:
             Raw JSON response text
         """
-        last_error = None
+        last_error: Exception | None = None
 
         for attempt in range(1, MAX_RETRIES + 1):
             try:
@@ -142,9 +150,7 @@ class GeminiService:
                         "response_mime_type": "application/json",
                         "response_json_schema": QuestionsResponse.model_json_schema(),
                         "max_output_tokens": MAX_OUTPUT_TOKENS,
-                        # "temperature": 0.7,
                     },
-                    timeout=REQUEST_TIMEOUT,
                 )
 
                 # Check for safety blocks or empty responses
@@ -176,6 +182,9 @@ class GeminiService:
                         f"Batch {batch_num}/{total_batches} failed after {MAX_RETRIES} attempts"
                     )
 
+        # This should never happen as we always catch exceptions, but satisfies type checker
+        if last_error is None:
+            raise RuntimeError(f"Batch {batch_num}/{total_batches} failed without capturing error")
         raise last_error
 
     def _parse_gemini_response(self, text_response: str) -> list[dict]:
