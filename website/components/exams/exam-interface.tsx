@@ -21,6 +21,9 @@ import Link from "next/link"
 import { AskAIDialog } from "./ask-ai-dialog"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
+import "katex/dist/katex.min.css"
 import { formatDistanceToNow } from "date-fns"
 import type { QuestionExplanation } from "@/lib/types"
 
@@ -321,7 +324,10 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                                 </pre>
                               ) : (
                                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm, remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                  >
                                     {(() => {
                                       const explanation = questionExplanations[question.id] || question.explanation
                                       if (typeof explanation === 'string') {
@@ -508,7 +514,10 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                         </pre>
                       ) : (
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
                             {(() => {
                               const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
                               if (typeof explanation === 'string') {

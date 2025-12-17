@@ -22,11 +22,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sparkles, Plus, Loader2 } from "lucide-react"
+import { Sparkles, Plus, Loader2, X, Check } from "lucide-react"
 import { createSystemPrompt, createCustomPrompt, getAllPrompts } from "@/app/actions/prompts"
 import { toast } from "sonner"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
+import "katex/dist/katex.min.css"
 import { Question } from "@/lib/types"
 
 interface AskAIDialogProps {
@@ -34,6 +37,8 @@ interface AskAIDialogProps {
   documentId: string
   onExplanationGenerated: (explanation: any) => void
 }
+
+type GenerationStatus = 'idle' | 'thinking' | 'generating' | 'complete'
 
 export function AskAIDialog({ question, documentId, onExplanationGenerated }: AskAIDialogProps) {
   const [open, setOpen] = useState(false)
@@ -44,17 +49,29 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
   const [isCreatingPrompt, setIsCreatingPrompt] = useState(false)
   const [newPromptName, setNewPromptName] = useState('')
   const [newPromptContent, setNewPromptContent] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle')
   const [showResult, setShowResult] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [displayedContent, setDisplayedContent] = useState('')
+  const [thinkingDots, setThinkingDots] = useState(0)
   const [isPending, startTransition] = useTransition()
   const streamingContainerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | undefined>(undefined)
 
+  // Animated thinking dots (●○○ → ○●○ → ○○●)
+  useEffect(() => {
+    if (generationStatus !== 'thinking') return
+
+    const interval = setInterval(() => {
+      setThinkingDots(prev => (prev + 1) % 3)
+    }, 500)
+
+    return () => clearInterval(interval)
+  }, [generationStatus])
+
   // Smooth character-by-character reveal animation
   useEffect(() => {
-    if (!isGenerating) {
+    if (generationStatus !== 'generating') {
       setDisplayedContent(streamingContent)
       return
     }
@@ -86,24 +103,40 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [streamingContent, displayedContent, isGenerating])
+  }, [streamingContent, displayedContent, generationStatus])
 
   // Auto-scroll to bottom when displayed content updates
   useEffect(() => {
-    if (isGenerating && streamingContainerRef.current) {
+    if (generationStatus === 'generating' && streamingContainerRef.current) {
       streamingContainerRef.current.scrollTop = streamingContainerRef.current.scrollHeight
     }
-  }, [displayedContent, isGenerating])
+  }, [displayedContent, generationStatus])
+
+  // Auto-hide "Complete!" status after 2 seconds
+  useEffect(() => {
+    if (generationStatus === 'complete') {
+      const timeout = setTimeout(() => {
+        setGenerationStatus('idle')
+      }, 2000)
+      return () => clearTimeout(timeout)
+    }
+  }, [generationStatus])
 
   // Load prompts when dialog opens
   const handleOpenChange = async (isOpen: boolean) => {
     setOpen(isOpen)
     if (!isOpen) {
-      // Reset state when closing
+      // Reset ALL state when closing
       setShowResult(false)
       setStreamingContent('')
       setDisplayedContent('')
-      setIsGenerating(false)
+      setGenerationStatus('idle')
+      setSelectedPromptId('')
+      setIsCreatingPrompt(false)
+      setNewPromptName('')
+      setNewPromptContent('')
+      setPromptType('system')
+      setThinkingDots(0)
     } else if (systemPrompts.length === 0 && customPrompts.length === 0) {
       const result = await getAllPrompts()
       if (result.success) {
@@ -151,10 +184,11 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
       return
     }
 
-    setIsGenerating(true)
+    setGenerationStatus('thinking')
     setShowResult(true)
     setStreamingContent('')
     setDisplayedContent('')
+    setThinkingDots(0)
 
     try {
       const response = await fetch('/api/explain', {
@@ -180,6 +214,7 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
       }
 
       let fullContent = ''
+      let hasReceivedFirstChunk = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -194,11 +229,15 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
 
             if (data.error) {
               toast.error(data.error)
-              setIsGenerating(false)
+              setGenerationStatus('idle')
               return
             }
 
             if (data.chunk) {
+              if (!hasReceivedFirstChunk) {
+                setGenerationStatus('generating')
+                hasReceivedFirstChunk = true
+              }
               fullContent += data.chunk
               setStreamingContent(fullContent)
             }
@@ -210,7 +249,7 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
 
               // Immediately show all content (stop animation)
               setDisplayedContent(fullContent)
-              setIsGenerating(false)
+              setGenerationStatus('complete')
 
               onExplanationGenerated({
                 content: fullContent,
@@ -228,11 +267,45 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
     } catch (error) {
       console.error('Generation error:', error)
       toast.error("Failed to generate explanation")
-      setIsGenerating(false)
+      setGenerationStatus('idle')
     }
   }
 
   const currentPrompts = promptType === 'system' ? systemPrompts : customPrompts
+
+  const renderThinkingDots = () => {
+    const dots = ['○', '○', '○']
+    dots[thinkingDots] = '●'
+    return dots.join('')
+  }
+
+  const renderStatusMessage = () => {
+    if (generationStatus === 'thinking') {
+      return (
+        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+          <span className="text-lg leading-none">{renderThinkingDots()}</span>
+          <span>Thinking...</span>
+        </div>
+      )
+    }
+    if (generationStatus === 'generating') {
+      return (
+        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Generating explanation...</span>
+        </div>
+      )
+    }
+    if (generationStatus === 'complete') {
+      return (
+        <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+          <Check className="h-4 w-4" />
+          <span>Complete!</span>
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -327,33 +400,44 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
             </>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating explanation...
-              </div>
+              {/* Status indicator at the top */}
+              {renderStatusMessage()}
+
+              {/* Result container */}
               <div
                 ref={streamingContainerRef}
                 className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-md border bg-muted/30 max-h-[400px] overflow-y-auto scroll-smooth"
               >
-                <div className="streaming-text">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {displayedContent || "*Thinking...*"}
-                  </ReactMarkdown>
-                  {isGenerating && <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />}
-                </div>
+                {displayedContent ? (
+                  <div className="streaming-text">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {displayedContent}
+                    </ReactMarkdown>
+                    {generationStatus === 'generating' && (
+                      <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-sm italic">
+                    Waiting for response...
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           {!showResult ? (
             <>
               <Button
                 variant="outline"
                 onClick={() => setOpen(false)}
-                disabled={isGenerating}
               >
+                <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
               {!isCreatingPrompt && (
@@ -365,21 +449,10 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
             </>
           ) : (
             <>
-              {isGenerating && (
-                <Button
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  disabled
-                >
-                  Generating...
-                </Button>
-              )}
-              {!isGenerating && (
-                <Button
-                  onClick={() => setOpen(false)}
-                  className="w-full"
-                >
-                  Close
+              {(generationStatus === 'complete' || generationStatus === 'idle') && (
+                <Button onClick={() => setOpen(false)}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Done
                 </Button>
               )}
             </>
