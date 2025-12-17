@@ -227,7 +227,7 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                   </div>
 
                   {/* AI Explanation Section */}
-                  <div className="mt-4">
+                  <div className="mt-4 mb-4">
                     <AIExplanationAccordion
                       question={question}
                       documentId={document.id}
@@ -331,7 +331,7 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
           })}
 
           {/* AI Explanation Section - Active Exam */}
-          <div className="mt-6">
+          <div className="mt-6 mb-4">
             <AIExplanationAccordion
               question={currentQuestion}
               documentId={document.id}

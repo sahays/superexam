@@ -320,10 +320,45 @@ export function AIExplanationAccordion({
             <span className="font-medium">Ask AI for Explanation</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="pt-4">
+        <AccordionContent className="pt-4 pb-6">
           <div className="space-y-4">
-            {/* Prompt Selection Section */}
-            <div className="space-y-4">
+            {/* Response Section */}
+            {(displayedContent || generationStatus !== 'idle') && (
+              <div className="space-y-3">
+                {renderStatusMessage()}
+
+                <div
+                  ref={streamingContainerRef}
+                  className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-md border bg-muted/30 max-h-[400px] overflow-y-auto scroll-smooth"
+                >
+                  {displayedContent ? (
+                    <div className="streaming-text">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {displayedContent}
+                      </ReactMarkdown>
+                      {generationStatus === 'generating' && (
+                        <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-sm italic">
+                      Waiting for response...
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Separator */}
+            {(displayedContent || generationStatus !== 'idle') && (
+              <Separator className="my-4" />
+            )}
+
+            {/* Prompt Selection Form */}
+            <div className="max-w-lg mx-auto space-y-4">
               <Tabs value={promptType} onValueChange={(v) => setPromptType(v as 'system' | 'custom')}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="system">System Prompts</TabsTrigger>
@@ -351,7 +386,6 @@ export function AIExplanationAccordion({
 
                   <Button
                     variant="outline"
-                    className="w-full"
                     onClick={() => setIsCreatingPrompt(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -361,7 +395,6 @@ export function AIExplanationAccordion({
                   <Button
                     onClick={handleGenerate}
                     disabled={!selectedPromptId || generationStatus === 'thinking' || generationStatus === 'generating'}
-                    className="w-full"
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
                     Generate Explanation
@@ -403,41 +436,6 @@ export function AIExplanationAccordion({
                 </div>
               )}
             </div>
-
-            {/* Separator */}
-            {(displayedContent || generationStatus !== 'idle') && (
-              <Separator className="my-4" />
-            )}
-
-            {/* Response Section */}
-            {(displayedContent || generationStatus !== 'idle') && (
-              <div className="space-y-3">
-                {renderStatusMessage()}
-
-                <div
-                  ref={streamingContainerRef}
-                  className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-md border bg-muted/30 max-h-[400px] overflow-y-auto scroll-smooth"
-                >
-                  {displayedContent ? (
-                    <div className="streaming-text">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
-                        {displayedContent}
-                      </ReactMarkdown>
-                      {generationStatus === 'generating' && (
-                        <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground text-sm italic">
-                      Waiting for response...
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </AccordionContent>
       </AccordionItem>
