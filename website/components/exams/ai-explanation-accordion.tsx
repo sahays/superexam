@@ -62,13 +62,24 @@ export function AIExplanationAccordion({
   const streamingContainerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | undefined>(undefined)
 
-  // Load existing explanation if provided
+  // Reset and load explanation when question changes
   useEffect(() => {
+    // Reset all state when question changes
+    setGenerationStatus('idle')
+    setSelectedPromptId('')
+    setIsCreatingPrompt(false)
+    setThinkingDots(0)
+
+    // Load existing explanation if it exists
     if (existingExplanation?.content) {
       setDisplayedContent(existingExplanation.content)
       setStreamingContent(existingExplanation.content)
+    } else {
+      // Clear content if no existing explanation
+      setDisplayedContent('')
+      setStreamingContent('')
     }
-  }, [existingExplanation])
+  }, [question.id, existingExplanation])
 
   // Load prompts when accordion opens
   useEffect(() => {
