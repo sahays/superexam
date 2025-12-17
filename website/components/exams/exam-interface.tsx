@@ -13,18 +13,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft, Copy, FileText, Eye } from "lucide-react"
+import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
 import { useExamStore } from "@/lib/stores/exam-store"
 import { updateExamAnswer, submitExam } from "@/app/actions/exams"
 import { toast } from "sonner"
 import Link from "next/link"
-import { AskAIDialog } from "./ask-ai-dialog"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import remarkMath from "remark-math"
-import rehypeKatex from "rehype-katex"
-import "katex/dist/katex.min.css"
-import { formatDistanceToNow } from "date-fns"
+import { AIExplanationAccordion } from "./ai-explanation-accordion"
 import type { QuestionExplanation } from "@/lib/types"
 
 interface ExamInterfaceProps {
@@ -53,7 +47,6 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
   const [showResults, setShowResults] = useState(isCompleted)
   const [localAnswers, setLocalAnswers] = useState<Record<string, number>>(session.answers || {})
   const [questionExplanations, setQuestionExplanations] = useState<Record<string, QuestionExplanation>>({})
-  const [showMarkdown, setShowMarkdown] = useState<Record<string, boolean>>({})
 
   // Initialize total questions
   useEffect(() => {
@@ -134,19 +127,6 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
 
   const answeredCount = Object.keys(localAnswers).length
   const isAnswered = localAnswers[currentQuestion?.id] !== undefined
-
-  const handleCopyExplanation = (explanation: QuestionExplanation | string) => {
-    const content = typeof explanation === 'string' ? explanation : explanation.content
-    navigator.clipboard.writeText(content)
-    toast.success("Explanation copied to clipboard")
-  }
-
-  const toggleMarkdownView = (questionId: string) => {
-    setShowMarkdown(prev => ({
-      ...prev,
-      [questionId]: !prev[questionId]
-    }))
-  }
 
   // Results view
   if (showResults && session.score !== null) {
@@ -247,104 +227,18 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
                   </div>
 
                   {/* AI Explanation Section */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <AskAIDialog
-                        question={question}
-                        documentId={document.id}
-                        onExplanationGenerated={(explanation) => {
-                          setQuestionExplanations(prev => ({
-                            ...prev,
-                            [question.id]: explanation
-                          }))
-                        }}
-                      />
-                    </div>
-
-                    {(question.explanation || questionExplanations[question.id]) && (
-                      <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="explanation" className="border rounded-md">
-                          <AccordionTrigger className="px-4 hover:no-underline">
-                            <span className="text-sm font-medium">AI Explanation</span>
-                          </AccordionTrigger>
-                          <AccordionContent className="px-4 pb-4">
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="text-xs text-muted-foreground">
-                                  {(() => {
-                                    const explanation = questionExplanations[question.id] || question.explanation
-                                    if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
-                                      return (
-                                        <>
-                                          Generated with <span className="font-medium">{explanation.promptName}</span>
-                                          {' '}({explanation.promptType})
-                                          {explanation.generatedAt && (
-                                            <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
-                                          )}
-                                        </>
-                                      )
-                                    }
-                                    return null
-                                  })()}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => toggleMarkdownView(question.id)}
-                                    className="h-7 px-2"
-                                  >
-                                    {showMarkdown[question.id] ? (
-                                      <><Eye className="h-3 w-3 mr-1" /> Formatted</>
-                                    ) : (
-                                      <><FileText className="h-3 w-3 mr-1" /> Markdown</>
-                                    )}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleCopyExplanation(questionExplanations[question.id] || question.explanation)}
-                                    className="h-7 px-2"
-                                  >
-                                    <Copy className="h-3 w-3 mr-1" /> Copy
-                                  </Button>
-                                </div>
-                              </div>
-                              {showMarkdown[question.id] ? (
-                                <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
-                                  {(() => {
-                                    const explanation = questionExplanations[question.id] || question.explanation
-                                    if (typeof explanation === 'string') {
-                                      return explanation
-                                    } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
-                                      return explanation.content
-                                    }
-                                    return ''
-                                  })()}
-                                </pre>
-                              ) : (
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm, remarkMath]}
-                                    rehypePlugins={[rehypeKatex]}
-                                  >
-                                    {(() => {
-                                      const explanation = questionExplanations[question.id] || question.explanation
-                                      if (typeof explanation === 'string') {
-                                        return explanation
-                                      } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
-                                        return explanation.content
-                                      }
-                                      return ''
-                                    })()}
-                                  </ReactMarkdown>
-                                </div>
-                              )}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    )}
+                  <div className="mt-4">
+                    <AIExplanationAccordion
+                      question={question}
+                      documentId={document.id}
+                      existingExplanation={questionExplanations[question.id] || question.explanation}
+                      onExplanationGenerated={(explanation) => {
+                        setQuestionExplanations(prev => ({
+                          ...prev,
+                          [question.id]: explanation
+                        }))
+                      }}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -437,104 +331,18 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
           })}
 
           {/* AI Explanation Section - Active Exam */}
-          <div className="space-y-3 mt-6">
-            <div className="flex items-center justify-between">
-              <AskAIDialog
-                question={currentQuestion}
-                documentId={document.id}
-                onExplanationGenerated={(explanation) => {
-                  setQuestionExplanations(prev => ({
-                    ...prev,
-                    [currentQuestion.id]: explanation
-                  }))
-                }}
-              />
-            </div>
-
-            {(currentQuestion.explanation || questionExplanations[currentQuestion.id]) && (
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="explanation" className="border rounded-md">
-                  <AccordionTrigger className="px-4 hover:no-underline">
-                    <span className="text-sm font-medium">AI Explanation</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs text-muted-foreground">
-                          {(() => {
-                            const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
-                            if (explanation && typeof explanation === 'object' && 'promptName' in explanation) {
-                              return (
-                                <>
-                                  Generated with <span className="font-medium">{explanation.promptName}</span>
-                                  {' '}({explanation.promptType})
-                                  {explanation.generatedAt && (
-                                    <> • {formatDistanceToNow(explanation.generatedAt)} ago</>
-                                  )}
-                                </>
-                              )
-                            }
-                            return null
-                          })()}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleMarkdownView(currentQuestion.id)}
-                            className="h-7 px-2"
-                          >
-                            {showMarkdown[currentQuestion.id] ? (
-                              <><Eye className="h-3 w-3 mr-1" /> Formatted</>
-                            ) : (
-                              <><FileText className="h-3 w-3 mr-1" /> Markdown</>
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyExplanation(questionExplanations[currentQuestion.id] || currentQuestion.explanation)}
-                            className="h-7 px-2"
-                          >
-                            <Copy className="h-3 w-3 mr-1" /> Copy
-                          </Button>
-                        </div>
-                      </div>
-                      {showMarkdown[currentQuestion.id] ? (
-                        <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
-                          {(() => {
-                            const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
-                            if (typeof explanation === 'string') {
-                              return explanation
-                            } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
-                              return explanation.content
-                            }
-                            return ''
-                          })()}
-                        </pre>
-                      ) : (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
-                            {(() => {
-                              const explanation = questionExplanations[currentQuestion.id] || currentQuestion.explanation
-                              if (typeof explanation === 'string') {
-                                return explanation
-                              } else if (explanation && typeof explanation === 'object' && 'content' in explanation) {
-                                return explanation.content
-                              }
-                              return ''
-                            })()}
-                          </ReactMarkdown>
-                        </div>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
+          <div className="mt-6">
+            <AIExplanationAccordion
+              question={currentQuestion}
+              documentId={document.id}
+              existingExplanation={questionExplanations[currentQuestion.id] || currentQuestion.explanation}
+              onExplanationGenerated={(explanation) => {
+                setQuestionExplanations(prev => ({
+                  ...prev,
+                  [currentQuestion.id]: explanation
+                }))
+              }}
+            />
           </div>
         </CardContent>
 
