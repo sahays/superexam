@@ -200,6 +200,10 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
               const prompts = promptType === 'system' ? systemPrompts : customPrompts
               const prompt = prompts.find(p => p.id === selectedPromptId)
 
+              // Immediately show all content (stop animation)
+              setDisplayedContent(fullContent)
+              setIsGenerating(false)
+
               onExplanationGenerated({
                 content: fullContent,
                 promptId: selectedPromptId,
@@ -207,9 +211,13 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
                 promptType,
                 generatedAt: Date.now()
               })
+
               toast.success("Explanation generated!")
-              setIsGenerating(false)
-              setOpen(false)
+
+              // Wait a moment for user to see completion, then close
+              setTimeout(() => {
+                setOpen(false)
+              }, 1500)
             }
           }
         }
@@ -326,9 +334,9 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
               >
                 <div className="streaming-text">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {displayedContent || "*Waiting for response...*"}
+                    {displayedContent || "*Thinking...*"}
                   </ReactMarkdown>
-                  <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />
+                  {isGenerating && <span className="typing-cursor inline-block w-[2px] h-4 bg-primary ml-1 animate-pulse" />}
                 </div>
               </div>
             </div>

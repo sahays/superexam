@@ -136,8 +136,17 @@ export async function submitExam(sessionId: string) {
       const question = questionsMap.get(questionId);
       const userAnswer = session.answers[questionId];
 
-      if (question && userAnswer !== undefined && userAnswer === question.correctAnswer) {
-        correctCount++;
+      if (question && userAnswer !== undefined) {
+        // userAnswer is the array index (0, 1, 2, etc.)
+        // correctAnswers contains the choice.index values (could be "A", "B", or numbers)
+        // We need to convert userAnswer to the corresponding choice.index
+        const correctAnswers = question.correctAnswers || [];
+        const choices = question.choices || [];
+        const selectedChoice = choices[userAnswer];
+
+        if (selectedChoice && correctAnswers.includes(selectedChoice.index)) {
+          correctCount++;
+        }
       }
     }
 
