@@ -45,6 +45,7 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
   const [newPromptName, setNewPromptName] = useState('')
   const [newPromptContent, setNewPromptContent] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showResult, setShowResult] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [displayedContent, setDisplayedContent] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -97,7 +98,13 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
   // Load prompts when dialog opens
   const handleOpenChange = async (isOpen: boolean) => {
     setOpen(isOpen)
-    if (isOpen && systemPrompts.length === 0 && customPrompts.length === 0) {
+    if (!isOpen) {
+      // Reset state when closing
+      setShowResult(false)
+      setStreamingContent('')
+      setDisplayedContent('')
+      setIsGenerating(false)
+    } else if (systemPrompts.length === 0 && customPrompts.length === 0) {
       const result = await getAllPrompts()
       if (result.success) {
         setSystemPrompts(result.systemPrompts || [])
@@ -145,6 +152,7 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
     }
 
     setIsGenerating(true)
+    setShowResult(true)
     setStreamingContent('')
     setDisplayedContent('')
 
@@ -213,11 +221,6 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
               })
 
               toast.success("Explanation generated!")
-
-              // Wait a moment for user to see completion, then close
-              setTimeout(() => {
-                setOpen(false)
-              }, 1500)
             }
           }
         }
@@ -248,7 +251,7 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {!isGenerating ? (
+          {!showResult ? (
             <>
               {/* Prompt Type Selection */}
               <Tabs value={promptType} onValueChange={(v) => setPromptType(v as 'system' | 'custom')}>
@@ -344,18 +347,42 @@ export function AskAIDialog({ question, documentId, onExplanationGenerated }: As
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={isGenerating}
-          >
-            Cancel
-          </Button>
-          {!isGenerating && !isCreatingPrompt && (
-            <Button onClick={handleGenerate} disabled={!selectedPromptId}>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate Explanation
-            </Button>
+          {!showResult ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isGenerating}
+              >
+                Cancel
+              </Button>
+              {!isCreatingPrompt && (
+                <Button onClick={handleGenerate} disabled={!selectedPromptId}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Explanation
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              {isGenerating && (
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled
+                >
+                  Generating...
+                </Button>
+              )}
+              {!isGenerating && (
+                <Button
+                  onClick={() => setOpen(false)}
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              )}
+            </>
           )}
         </DialogFooter>
       </DialogContent>
