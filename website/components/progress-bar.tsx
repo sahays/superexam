@@ -1,14 +1,44 @@
 "use client"
 
-import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
+import { useEffect } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+
+// Configure NProgress
+NProgress.configure({
+  showSpinner: false,
+  trickleSpeed: 200,
+  minimum: 0.08,
+  easing: 'ease',
+  speed: 400
+})
 
 export function ProgressBarProvider() {
-  return (
-    <ProgressBar
-      height="3px"
-      color="#5750F1"
-      options={{ showSpinner: false }}
-      shallowRouting
-    />
-  )
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    NProgress.done()
+  }, [pathname, searchParams])
+
+  useEffect(() => {
+    // Start progress on link clicks
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const anchor = target.closest('a')
+
+      if (anchor && anchor.href && !anchor.target) {
+        const url = new URL(anchor.href)
+        if (url.origin === window.location.origin && url.pathname !== pathname) {
+          NProgress.start()
+        }
+      }
+    }
+
+    document.addEventListener('click', handleClick, true)
+    return () => document.removeEventListener('click', handleClick, true)
+  }, [pathname])
+
+  return null
 }
