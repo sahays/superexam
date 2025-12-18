@@ -44,6 +44,7 @@ export default async function ExamSessionPage({ params }: PageProps) {
         document={document}
         questions={questionsResult.questions}
         isCompleted={true}
+        initialQuestionIndex={session.currentQuestionIndex || 0}
       />
     )
   }
@@ -61,6 +62,7 @@ export default async function ExamSessionPage({ params }: PageProps) {
       document={document}
       questions={questionsResult.questions}
       isCompleted={false}
+      initialQuestionIndex={session.currentQuestionIndex || 0}
     />
   )
 }

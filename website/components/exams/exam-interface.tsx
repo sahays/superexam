@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
+import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft, Info } from "lucide-react"
 import { useExamStore } from "@/lib/stores/exam-store"
-import { updateExamAnswer, submitExam } from "@/app/actions/exams"
+import { updateExamAnswer, submitExam, updateCurrentQuestion } from "@/app/actions/exams"
 import { toast } from "sonner"
 import Link from "next/link"
 import { AIExplanationAccordion } from "./ai-explanation-accordion"
@@ -26,9 +27,10 @@ interface ExamInterfaceProps {
   document: any
   questions: any[]
   isCompleted: boolean
+  initialQuestionIndex?: number
 }
 
-export function ExamInterface({ session, document, questions, isCompleted }: ExamInterfaceProps) {
+export function ExamInterface({ session, document, questions, isCompleted, initialQuestionIndex }: ExamInterfaceProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const {
@@ -80,6 +82,25 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
       setAnswer(questionId, answer)
     })
   }, [localAnswers, setAnswer])
+
+  // Initialize current question index from saved position
+  useEffect(() => {
+    if (initialQuestionIndex !== undefined && !isCompleted) {
+      setCurrentQuestionIndex(initialQuestionIndex)
+    }
+  }, [initialQuestionIndex, isCompleted, setCurrentQuestionIndex])
+
+  // Track and save current question index changes (debounced)
+  useEffect(() => {
+    if (isCompleted) return
+
+    const timer = setTimeout(() => {
+      updateCurrentQuestion(session.id, currentQuestionIndex)
+        .catch(error => console.error('Failed to save question position:', error))
+    }, 1000) // Wait 1 second after navigation stops
+
+    return () => clearTimeout(timer)
+  }, [currentQuestionIndex, session.id, isCompleted])
 
   const currentQuestion = questions[currentQuestionIndex]
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
@@ -296,6 +317,18 @@ export function ExamInterface({ session, document, questions, isCompleted }: Exa
           <Progress value={progress} />
         </div>
       </div>
+
+      {/* Resume notification */}
+      {initialQuestionIndex !== undefined && initialQuestionIndex > 0 && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Resuming Exam</AlertTitle>
+          <AlertDescription>
+            Continuing from Question {initialQuestionIndex + 1} of {questions.length}.
+            You have {answeredCount} question{answeredCount !== 1 ? 's' : ''} answered so far.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Separator />
 

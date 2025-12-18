@@ -64,8 +64,16 @@ export interface ExamSession {
   id: string;
   documentId: string;
   userId?: string;
+  questionIds?: string[]; // All question IDs in this exam (in order)
   answers: Record<string, number>; // questionId -> selected option index
   score: number;
   startedAt: number;
   completedAt: number;
+  timerEnabled?: boolean;
+  timerMinutes?: number | null;
+  timerStartedAt?: number;
+  totalQuestions?: number;
+  correctCount?: number;
+  currentQuestionIndex?: number; // NEW: 0-based index of current question
+  lastActivityAt?: number; // NEW: Timestamp of last interaction
 }

@@ -57,6 +57,9 @@ export async function createExamSession(params: CreateExamSessionParams) {
       startedAt: now,
       completedAt: null,
       score: null,
+      totalQuestions: questions.length,
+      currentQuestionIndex: 0,
+      lastActivityAt: now,
     };
 
     await sessionRef.set(session);
@@ -100,13 +103,43 @@ export async function updateExamAnswer(sessionId: string, questionId: string, an
     const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
 
     await sessionRef.update({
-      [`answers.${questionId}`]: answer
+      [`answers.${questionId}`]: answer,
+      lastActivityAt: Date.now()
     });
 
     return { success: true };
   } catch (error) {
     console.error('Update exam answer error:', error);
     return { error: 'Failed to save answer' };
+  }
+}
+
+export async function updateCurrentQuestion(sessionId: string, questionIndex: number) {
+  try {
+    const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
+    const sessionSnap = await sessionRef.get();
+
+    if (!sessionSnap.exists) {
+      return { error: 'Session not found' };
+    }
+
+    const session = sessionSnap.data() as any;
+    const totalQuestions = session.totalQuestions || session.questionIds?.length || 0;
+
+    // Validate questionIndex is within bounds
+    if (questionIndex < 0 || questionIndex >= totalQuestions) {
+      return { error: 'Invalid question index' };
+    }
+
+    await sessionRef.update({
+      currentQuestionIndex: questionIndex,
+      lastActivityAt: Date.now()
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Update current question error:', error);
+    return { error: 'Failed to update current question' };
   }
 }
 
