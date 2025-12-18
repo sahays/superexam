@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { documentId, questionId, promptId, promptType } = await request.json();
+    const { documentId, questionId, promptId } = await request.json();
 
-    if (!documentId || !questionId || !promptId || !promptType) {
+    if (!documentId || !questionId || !promptId) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -57,8 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch prompt
-    const promptCollection = promptType === 'system' ? 'system-prompts' : 'custom-prompts';
-    const promptSnap = await db.collection(collection(promptCollection)).doc(promptId).get();
+    const promptSnap = await db.collection(collection('system-prompts')).doc(promptId).get();
 
     if (!promptSnap.exists) {
       return new Response(
@@ -120,7 +119,6 @@ Correct Answer(s): ${question.correctAnswers.map((ans: string | number) => {
               content: fullResponse,
               promptId: promptId,
               promptName: promptData.name,
-              promptType: promptType,
               generatedAt: Date.now()
             }
           });

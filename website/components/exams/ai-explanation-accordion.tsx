@@ -18,10 +18,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sparkles, Plus, Loader2, Check } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
-import { createSystemPrompt, createCustomPrompt, getAllPrompts } from "@/app/actions/prompts"
+import { createSystemPrompt, getAllPrompts } from "@/app/actions/prompts"
 import { toast } from "sonner"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -46,10 +45,8 @@ export function AIExplanationAccordion({
   existingExplanation
 }: AIExplanationAccordionProps) {
   const [accordionValue, setAccordionValue] = useState<string>("")
-  const [promptType, setPromptType] = useState<'system' | 'custom'>('system')
   const [selectedPromptId, setSelectedPromptId] = useState<string>('')
   const [systemPrompts, setSystemPrompts] = useState<any[]>([])
-  const [customPrompts, setCustomPrompts] = useState<any[]>([])
   const [isCreatingPrompt, setIsCreatingPrompt] = useState(false)
   const [newPromptName, setNewPromptName] = useState('')
   const [newPromptContent, setNewPromptContent] = useState('')
@@ -92,7 +89,6 @@ export function AIExplanationAccordion({
     const result = await getAllPrompts()
     if (result.success) {
       setSystemPrompts(result.systemPrompts || [])
-      setCustomPrompts(result.customPrompts || [])
       setPromptsLoaded(true)
     }
   }
@@ -165,9 +161,7 @@ export function AIExplanationAccordion({
     }
 
     startTransition(async () => {
-      const result = promptType === 'system'
-        ? await createSystemPrompt(newPromptName, newPromptContent)
-        : await createCustomPrompt(newPromptName, newPromptContent)
+      const result = await createSystemPrompt(newPromptName, newPromptContent)
 
       if (result.error) {
         toast.error(result.error)
@@ -181,7 +175,6 @@ export function AIExplanationAccordion({
         const updatedPrompts = await getAllPrompts()
         if (updatedPrompts.success) {
           setSystemPrompts(updatedPrompts.systemPrompts || [])
-          setCustomPrompts(updatedPrompts.customPrompts || [])
           if (result.id) {
             setSelectedPromptId(result.id)
           }
@@ -208,8 +201,7 @@ export function AIExplanationAccordion({
         body: JSON.stringify({
           documentId,
           questionId: question.id,
-          promptId: selectedPromptId,
-          promptType
+          promptId: selectedPromptId
         })
       })
 
@@ -254,8 +246,7 @@ export function AIExplanationAccordion({
             }
 
             if (data.done) {
-              const prompts = promptType === 'system' ? systemPrompts : customPrompts
-              const prompt = prompts.find(p => p.id === selectedPromptId)
+              const prompt = systemPrompts.find(p => p.id === selectedPromptId)
 
               setDisplayedContent(fullContent)
               setGenerationStatus('complete')
@@ -264,7 +255,6 @@ export function AIExplanationAccordion({
                 content: fullContent,
                 promptId: selectedPromptId,
                 promptName: prompt?.name || 'Unknown',
-                promptType,
                 generatedAt: Date.now()
               })
 
@@ -280,7 +270,7 @@ export function AIExplanationAccordion({
     }
   }
 
-  const currentPrompts = promptType === 'system' ? systemPrompts : customPrompts
+  const currentPrompts = systemPrompts
 
   const renderThinkingDots = () => {
     const dots = ['○', '○', '○']
@@ -332,7 +322,7 @@ export function AIExplanationAccordion({
           </div>
         </AccordionTrigger>
         <AccordionContent className="pt-4 pb-6">
-          <div className="space-y-4">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-4">
             {/* Response Section */}
             {(displayedContent || generationStatus !== 'idle') && (
               <div className="space-y-3">
@@ -370,13 +360,6 @@ export function AIExplanationAccordion({
 
             {/* Prompt Selection Form */}
             <div className="max-w-lg mx-auto space-y-4">
-              <Tabs value={promptType} onValueChange={(v) => setPromptType(v as 'system' | 'custom')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="system">System Prompts</TabsTrigger>
-                  <TabsTrigger value="custom">Custom Prompts</TabsTrigger>
-                </TabsList>
-              </Tabs>
-
               {!isCreatingPrompt ? (
                 <div className="space-y-4">
                   <div className="grid gap-2">
@@ -394,18 +377,20 @@ export function AIExplanationAccordion({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       variant="outline"
                       onClick={() => setIsCreatingPrompt(true)}
+                      className="flex-1"
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Create New {promptType === 'system' ? 'System' : 'Custom'} Prompt
+                      Create New Prompt
                     </Button>
 
                     <Button
                       onClick={handleGenerate}
                       disabled={!selectedPromptId || generationStatus === 'thinking' || generationStatus === 'generating'}
+                      className="flex-1"
                     >
                       <Sparkles className="mr-2 h-4 w-4" />
                       Generate Explanation
