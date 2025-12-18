@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useState, useTransition, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -49,6 +49,7 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
   const [showResults, setShowResults] = useState(isCompleted)
   const [localAnswers, setLocalAnswers] = useState<Record<string, number>>(session.answers || {})
   const [questionExplanations, setQuestionExplanations] = useState<Record<string, QuestionExplanation>>({})
+  const isInitialMount = useRef(true)
 
   // Initialize total questions
   useEffect(() => {
@@ -88,10 +89,14 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
     if (initialQuestionIndex !== undefined && !isCompleted) {
       setCurrentQuestionIndex(initialQuestionIndex)
     }
+    // Mark that initial mount is complete
+    isInitialMount.current = false
   }, [initialQuestionIndex, isCompleted, setCurrentQuestionIndex])
 
   // Track and save current question index changes (debounced)
   useEffect(() => {
+    // Skip on initial mount to avoid saving default value (0)
+    if (isInitialMount.current) return
     if (isCompleted) return
 
     const timer = setTimeout(() => {
