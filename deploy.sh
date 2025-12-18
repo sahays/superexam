@@ -8,7 +8,7 @@ WEBSITE_ONLY=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --full) UPGRADE_ONLY=false ;;
-        --website) UPGRADE_ONLY=false; WEBSITE_ONLY=true ;;
+        --website) WEBSITE_ONLY=true ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
