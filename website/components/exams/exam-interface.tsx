@@ -14,7 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft, Info } from "lucide-react"
+import { Clock, ChevronLeft, ChevronRight, CheckCircle2, XCircle, ArrowLeft, Info, X } from "lucide-react"
 import { useExamStore } from "@/lib/stores/exam-store"
 import { updateExamAnswer, submitExam, updateCurrentQuestion } from "@/app/actions/exams"
 import { toast } from "sonner"
@@ -49,6 +49,7 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
   const [showResults, setShowResults] = useState(isCompleted)
   const [localAnswers, setLocalAnswers] = useState<Record<string, number>>(session.answers || {})
   const [questionExplanations, setQuestionExplanations] = useState<Record<string, QuestionExplanation>>({})
+  const [showResumeAlert, setShowResumeAlert] = useState(true)
   const isInitialMount = useRef(true)
 
   // Initialize total questions
@@ -324,14 +325,22 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
       </div>
 
       {/* Resume notification */}
-      {initialQuestionIndex !== undefined && initialQuestionIndex > 0 && (
-        <Alert>
+      {showResumeAlert && initialQuestionIndex !== undefined && initialQuestionIndex > 0 && (
+        <Alert className="relative">
           <Info className="h-4 w-4" />
           <AlertTitle>Resuming Exam</AlertTitle>
           <AlertDescription>
             Continuing from Question {initialQuestionIndex + 1} of {questions.length}.
             You have {answeredCount} question{answeredCount !== 1 ? 's' : ''} answered so far.
           </AlertDescription>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-6 w-6"
+            onClick={() => setShowResumeAlert(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 
@@ -340,6 +349,33 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
       {/* Question Card */}
       <Card>
         <CardHeader>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={previousQuestion}
+              disabled={currentQuestionIndex === 0}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+
+            {currentQuestionIndex < questions.length - 1 ? (
+              <Button size="sm" onClick={nextQuestion}>
+                Next
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={isPending}
+                className="bg-success text-success-foreground hover:bg-success/90"
+              >
+                Submit Exam
+              </Button>
+            )}
+          </div>
           <CardTitle className="text-xl">{currentQuestion.questionText}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
