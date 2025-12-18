@@ -394,22 +394,24 @@ export function AIExplanationAccordion({
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="grid gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreatingPrompt(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create New {promptType === 'system' ? 'System' : 'Custom'} Prompt
+                    </Button>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreatingPrompt(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create New {promptType === 'system' ? 'System' : 'Custom'} Prompt
-                  </Button>
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={!selectedPromptId || generationStatus === 'thinking' || generationStatus === 'generating'}
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Explanation
+                    </Button>
+                  </div>
 
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={!selectedPromptId || generationStatus === 'thinking' || generationStatus === 'generating'}
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Explanation
-                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
