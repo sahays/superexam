@@ -186,36 +186,36 @@ APIs** to parse content and extract questions. This version replaces the previou
 
 ---
 
-## Epic 10: Access Code Authentication (In Progress)
+## Epic 10: Access Code Authentication ✅ COMPLETE
 
 **Goal:** Temporary access via codes (no accounts). 12-hour sessions.
 
 ### Story 10.1: Authentication Infrastructure
 
-- [ ] JWT utility functions (create, verify tokens).
-- [ ] Access-codes Firestore collection.
-- [ ] Auth Server Actions (validate, create, manage codes).
-- [ ] Middleware for route protection.
+- [x] JWT utility functions (create, verify tokens).
+- [x] Access-codes Firestore collection.
+- [x] Auth Server Actions (validate, create, manage codes).
+- [x] Middleware for route protection.
 
 ### Story 10.2: Access Code Entry
 
-- [ ] `/access-code` page with form.
-- [ ] Code validation flow.
-- [ ] Set HTTP-only cookie with JWT.
-- [ ] Redirect to dashboard on success.
+- [x] `/access-code` page with form.
+- [x] Code validation flow.
+- [x] Set HTTP-only cookie with JWT.
+- [x] Redirect to dashboard on success.
 
 ### Story 10.3: Admin Dashboard
 
-- [ ] `/admin/codes` protected route (admin code only).
-- [ ] View all codes with usage stats.
-- [ ] Create new codes form.
-- [ ] Enable/Disable codes.
-- [ ] Delete codes.
+- [x] `/admin/codes` protected route (admin code only).
+- [x] View all codes with usage stats.
+- [x] Create new codes form.
+- [x] Enable/Disable codes.
+- [x] Delete codes.
 
 ### Story 10.4: Initial Setup
 
-- [ ] Add JWT_SECRET to environment.
-- [ ] Create initial admin code in Firestore.
-- [ ] Update middleware matcher config.
+- [x] Add JWT_SECRET to environment.
+- [x] Create initial admin code in Firestore (see `/admin/README.md`).
+- [x] Update middleware matcher config.
 
 ---
