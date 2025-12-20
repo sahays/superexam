@@ -48,7 +48,8 @@ export async function validateAccessCode(code: string) {
     })
 
     // Set HTTP-only cookie
-    cookies().set('access-token', token, {
+    const cookieStore = await cookies()
+    cookieStore.set('access-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -63,7 +64,8 @@ export async function validateAccessCode(code: string) {
 }
 
 export async function signOut() {
-  cookies().delete('access-token')
+  const cookieStore = await cookies()
+  cookieStore.delete('access-token')
   redirect('/access-code')
 }
 
