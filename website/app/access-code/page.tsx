@@ -63,7 +63,7 @@ export default function AccessCodePage() {
                 type="text"
                 placeholder="Enter your code"
                 value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                onChange={(e) => setCode(e.target.value)}
                 disabled={isPending}
                 className="text-center text-lg tracking-wider font-mono"
                 autoFocus

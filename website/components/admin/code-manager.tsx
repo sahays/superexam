@@ -122,7 +122,7 @@ export function CodeManager({ initialCodes }: CodeManagerProps) {
                   id="code"
                   placeholder="BETA2024"
                   value={newCode.code}
-                  onChange={(e) => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })}
+                  onChange={(e) => setNewCode({ ...newCode, code: e.target.value })}
                   disabled={isPending}
                 />
               </div>
