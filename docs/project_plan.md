@@ -185,3 +185,37 @@ APIs** to parse content and extract questions. This version replaces the previou
 - [ ] CTA buttons.
 
 ---
+
+## Epic 10: Access Code Authentication (In Progress)
+
+**Goal:** Temporary access via codes (no accounts). 12-hour sessions.
+
+### Story 10.1: Authentication Infrastructure
+
+- [ ] JWT utility functions (create, verify tokens).
+- [ ] Access-codes Firestore collection.
+- [ ] Auth Server Actions (validate, create, manage codes).
+- [ ] Middleware for route protection.
+
+### Story 10.2: Access Code Entry
+
+- [ ] `/access-code` page with form.
+- [ ] Code validation flow.
+- [ ] Set HTTP-only cookie with JWT.
+- [ ] Redirect to dashboard on success.
+
+### Story 10.3: Admin Dashboard
+
+- [ ] `/admin/codes` protected route (admin code only).
+- [ ] View all codes with usage stats.
+- [ ] Create new codes form.
+- [ ] Enable/Disable codes.
+- [ ] Delete codes.
+
+### Story 10.4: Initial Setup
+
+- [ ] Add JWT_SECRET to environment.
+- [ ] Create initial admin code in Firestore.
+- [ ] Update middleware matcher config.
+
+---
