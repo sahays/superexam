@@ -113,3 +113,41 @@ export async function incrementCodeUsage(id: string) {
     throw error
   }
 }
+
+/**
+ * Ensures the admin code from environment variable exists in Firestore.
+ * Creates it automatically if it doesn't exist.
+ */
+export async function ensureAdminCode() {
+  const adminCode = process.env.ADMIN_CODE
+
+  if (!adminCode) {
+    console.warn('ADMIN_CODE not set in environment variables')
+    return
+  }
+
+  try {
+    // Check if code already exists
+    const existing = await getAccessCode(adminCode)
+
+    if (existing) {
+      // Admin code already exists
+      return
+    }
+
+    // Create admin code
+    await createAccessCode({
+      code: adminCode,
+      expiresAt: 9999999999999, // Far future (effectively permanent)
+      maxUses: 999999, // Very high limit
+      isAdmin: true,
+      active: true,
+      description: 'Auto-generated admin access from ADMIN_CODE env',
+      createdBy: 'system'
+    })
+
+    console.log('Admin code created successfully from ADMIN_CODE env variable')
+  } catch (error) {
+    console.error('Failed to ensure admin code:', error)
+  }
+}

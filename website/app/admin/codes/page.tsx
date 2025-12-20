@@ -3,10 +3,14 @@ import { CodeManager } from "@/components/admin/code-manager"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { ensureAdminCode } from "@/lib/db/access-codes"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminCodesPage() {
+  // Ensure admin code exists from env variable
+  await ensureAdminCode()
+
   const result = await getAccessCodes()
   const codes = result.success ? result.codes : []
 

@@ -1,45 +1,39 @@
 # Admin Setup
 
-## Initial Admin Code Creation
+## Automatic Admin Code Setup
 
-To access the admin dashboard for the first time, you need to manually create an admin access code in Firestore.
+The admin access code is now automatically created from your `.env` file. No manual Firestore edits needed!
 
 ### Steps:
 
-1. **Go to Firebase Console**
-   - Navigate to Firestore Database
-   - Find or create the `access-codes` collection
+1. **Set your admin code in `.env`:**
 
-2. **Add a new document with these fields:**
-
-```json
-{
-  "code": "ADMIN-YOUR-SECRET-CODE",
-  "expiresAt": 9999999999999,
-  "maxUses": 1,
-  "currentUses": 0,
-  "isAdmin": true,
-  "active": true,
-  "description": "Initial admin access",
-  "createdBy": "system",
-  "createdAt": 1703012345000
-}
+```bash
+ADMIN_CODE=ADMIN-YOUR-SECRET-CODE
 ```
 
-3. **Important fields:**
-   - `code`: Your secret admin code (choose something secure!)
-   - `isAdmin`: **MUST be true** for admin access
-   - `maxUses`: Set to 1 (only you can use it)
-   - `expiresAt`: Set to far future (9999999999999) for permanent access
+Choose a secure code. This will be auto-created in Firestore when you first access the admin dashboard.
 
-4. **Access the dashboard:**
+2. **Access the dashboard:**
    - Go to `/access-code`
-   - Enter your admin code
+   - Enter your admin code (from `.env`)
    - You'll be redirected to `/admin/codes`
+   - The code is automatically created in Firestore on first load
 
-5. **Create more codes:**
+3. **Create more codes:**
    - Use the admin dashboard to create regular user codes
    - Create additional admin codes if needed
+
+## How It Works
+
+When the `/admin/codes` page loads, it automatically:
+- Checks if `ADMIN_CODE` env variable is set
+- Checks if a code with that value exists in Firestore
+- Creates it if missing with:
+  - `isAdmin: true` (admin privileges)
+  - `expiresAt: 9999999999999` (effectively permanent)
+  - `maxUses: 999999` (very high limit)
+  - `active: true`
 
 ## Security Notes
 
