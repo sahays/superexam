@@ -10,11 +10,15 @@ import {
   updateAccessCode,
   deleteAccessCode,
   incrementCodeUsage,
+  ensureAdminCode,
   type AccessCode
 } from '@/lib/db/access-codes'
 
 export async function validateAccessCode(code: string) {
   try {
+    // Ensure admin code exists from env variable (if set)
+    await ensureAdminCode()
+
     // Get code from database
     const accessCode = await getAccessCode(code)
 
