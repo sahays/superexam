@@ -65,7 +65,7 @@ export interface ExamSession {
   documentId: string;
   userId?: string;
   questionIds?: string[]; // All question IDs in this exam (in order)
-  answers: Record<string, number>; // questionId -> selected option index
+  answers: Record<string, number | number[]>; // questionId -> selected option index (single) or indices (multi-select)
   score: number;
   startedAt: number;
   completedAt: number;

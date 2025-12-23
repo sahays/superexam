@@ -98,7 +98,7 @@ export async function getExamSession(sessionId: string) {
   }
 }
 
-export async function updateExamAnswer(sessionId: string, questionId: string, answer: number) {
+export async function updateExamAnswer(sessionId: string, questionId: string, answer: number | number[]) {
   try {
     const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
 
@@ -170,15 +170,32 @@ export async function submitExam(sessionId: string) {
       const userAnswer = session.answers[questionId];
 
       if (question && userAnswer !== undefined) {
-        // userAnswer is the array index (0, 1, 2, etc.)
-        // correctAnswers contains the choice.index values (could be "A", "B", or numbers)
-        // We need to convert userAnswer to the corresponding choice.index
         const correctAnswers = question.correctAnswers || [];
         const choices = question.choices || [];
-        const selectedChoice = choices[userAnswer];
+        const isMultiSelect = question.type === 'multi_select';
 
-        if (selectedChoice && correctAnswers.includes(selectedChoice.index)) {
-          correctCount++;
+        if (isMultiSelect && Array.isArray(userAnswer)) {
+          // For multi-select questions
+          // Convert user answer indices to choice indices
+          const userIndices = userAnswer.map(idx => choices[idx]?.index).filter(Boolean);
+
+          // Check if all selected answers are correct and all correct answers are selected
+          const isCorrect = userIndices.length === correctAnswers.length &&
+                           userIndices.every(idx => correctAnswers.includes(idx));
+
+          if (isCorrect) {
+            correctCount++;
+          }
+        } else if (!isMultiSelect && typeof userAnswer === 'number') {
+          // For single-select questions
+          // userAnswer is the array index (0, 1, 2, etc.)
+          // correctAnswers contains the choice.index values (could be "A", "B", or numbers)
+          // We need to convert userAnswer to the corresponding choice.index
+          const selectedChoice = choices[userAnswer];
+
+          if (selectedChoice && correctAnswers.includes(selectedChoice.index)) {
+            correctCount++;
+          }
         }
       }
     }

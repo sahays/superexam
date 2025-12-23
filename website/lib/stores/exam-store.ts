@@ -2,12 +2,13 @@ import { create } from 'zustand'
 
 interface ExamState {
   currentQuestionIndex: number
-  answers: Record<string, number>
+  answers: Record<string, number | number[]>
   timeRemaining: number | null
   totalQuestions: number
 
   setCurrentQuestionIndex: (index: number) => void
-  setAnswer: (questionId: string, answer: number) => void
+  setAnswer: (questionId: string, answer: number | number[]) => void
+  toggleMultiSelectAnswer: (questionId: string, optionIndex: number) => void
   setTimeRemaining: (time: number) => void
   setTotalQuestions: (total: number) => void
   nextQuestion: () => void
@@ -27,6 +28,20 @@ export const useExamStore = create<ExamState>((set) => ({
     set((state) => ({
       answers: { ...state.answers, [questionId]: answer }
     })),
+
+  toggleMultiSelectAnswer: (questionId, optionIndex) =>
+    set((state) => {
+      const currentAnswers = state.answers[questionId]
+      const answersArray = Array.isArray(currentAnswers) ? currentAnswers : []
+
+      const newAnswers = answersArray.includes(optionIndex)
+        ? answersArray.filter(idx => idx !== optionIndex) // Remove if already selected
+        : [...answersArray, optionIndex] // Add if not selected
+
+      return {
+        answers: { ...state.answers, [questionId]: newAnswers }
+      }
+    }),
 
   setTimeRemaining: (time) => set({ timeRemaining: time }),
 

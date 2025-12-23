@@ -39,6 +39,7 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
     timeRemaining,
     setCurrentQuestionIndex,
     setAnswer,
+    toggleMultiSelectAnswer,
     setTimeRemaining,
     setTotalQuestions,
     nextQuestion,
@@ -47,7 +48,7 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
   } = useExamStore()
 
   const [showResults, setShowResults] = useState(isCompleted)
-  const [localAnswers, setLocalAnswers] = useState<Record<string, number>>(session.answers || {})
+  const [localAnswers, setLocalAnswers] = useState<Record<string, number | number[]>>(session.answers || {})
   const [questionExplanations, setQuestionExplanations] = useState<Record<string, QuestionExplanation>>({})
   const [showResumeAlert, setShowResumeAlert] = useState(true)
   const isInitialMount = useRef(true)
@@ -122,17 +123,42 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
     if (isCompleted) return
 
     const questionId = currentQuestion.id
-    const newAnswers = { ...localAnswers, [questionId]: optionIndex }
-    setLocalAnswers(newAnswers)
-    setAnswer(questionId, optionIndex)
+    const isMultiSelect = currentQuestion.type === 'multi_select'
 
-    // Save to server
-    startTransition(async () => {
-      const result = await updateExamAnswer(session.id, questionId, optionIndex)
-      if (result.error) {
-        toast.error("Failed to save answer")
-      }
-    })
+    if (isMultiSelect) {
+      // Handle multi-select (checkboxes)
+      const currentAnswers = localAnswers[questionId]
+      const answersArray = Array.isArray(currentAnswers) ? currentAnswers : []
+
+      const newAnswers = answersArray.includes(optionIndex)
+        ? answersArray.filter(idx => idx !== optionIndex)
+        : [...answersArray, optionIndex]
+
+      const updatedAnswers = { ...localAnswers, [questionId]: newAnswers }
+      setLocalAnswers(updatedAnswers)
+      toggleMultiSelectAnswer(questionId, optionIndex)
+
+      // Save to server
+      startTransition(async () => {
+        const result = await updateExamAnswer(session.id, questionId, newAnswers)
+        if (result.error) {
+          toast.error("Failed to save answer")
+        }
+      })
+    } else {
+      // Handle single-select (radio buttons)
+      const newAnswers = { ...localAnswers, [questionId]: optionIndex }
+      setLocalAnswers(newAnswers)
+      setAnswer(questionId, optionIndex)
+
+      // Save to server
+      startTransition(async () => {
+        const result = await updateExamAnswer(session.id, questionId, optionIndex)
+        if (result.error) {
+          toast.error("Failed to save answer")
+        }
+      })
+    }
   }
 
   const handleSubmit = async () => {
@@ -152,8 +178,12 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
     }
   }
 
-  const answeredCount = Object.keys(localAnswers).length
-  const isAnswered = localAnswers[currentQuestion?.id] !== undefined
+  const answeredCount = Object.keys(localAnswers).filter(key => {
+    const answer = localAnswers[key]
+    return answer !== undefined && (!Array.isArray(answer) || answer.length > 0)
+  }).length
+  const currentAnswer = localAnswers[currentQuestion?.id]
+  const isAnswered = currentAnswer !== undefined && (!Array.isArray(currentAnswer) || currentAnswer.length > 0)
 
   // Results view
   if (showResults && session.score !== null) {
@@ -201,13 +231,30 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
 
           {questions.map((question, index) => {
             const userAnswer = localAnswers[question.id]
-            const isCorrect = question.correctAnswers?.includes(userAnswer)
+            const isMultiSelect = question.type === 'multi_select'
+
+            // Calculate if answer is correct
+            let isCorrect = false
+            if (isMultiSelect && Array.isArray(userAnswer)) {
+              // For multi-select, all selected answers must be correct and all correct answers must be selected
+              const userIndices = userAnswer.map(idx => question.choices?.[idx]?.index).filter(Boolean)
+              const correctAnswers = question.correctAnswers || []
+              isCorrect = userIndices.length === correctAnswers.length &&
+                          userIndices.every(idx => correctAnswers.includes(idx))
+            } else if (!isMultiSelect && typeof userAnswer === 'number') {
+              // For single-select
+              const selectedChoice = question.choices?.[userAnswer]
+              isCorrect = selectedChoice && question.correctAnswers?.includes(selectedChoice.index) || false
+            }
 
             return (
               <Card key={question.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
-                    <CardTitle className="text-base">Question {index + 1}</CardTitle>
+                    <CardTitle className="text-base">
+                      Question {index + 1}
+                      {isMultiSelect && <span className="text-sm font-normal text-muted-foreground ml-2">(Multi-select)</span>}
+                    </CardTitle>
                     {isCorrect ? (
                       <Badge className="bg-success/10 text-success hover:bg-success/20 border border-success/20">
                         <CheckCircle2 className="mr-1 h-3 w-3" />
@@ -227,7 +274,9 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
                   <div className="space-y-2">
                     {question.choices?.map((choice: import("@/lib/types").QuestionChoice, choiceIndex: number) => {
                       const isCorrectAnswer = question.correctAnswers?.includes(choice.index)
-                      const isUserAnswer = userAnswer === choiceIndex
+                      const isUserAnswer = isMultiSelect
+                        ? Array.isArray(userAnswer) && userAnswer.includes(choiceIndex)
+                        : userAnswer === choiceIndex
 
                       return (
                         <div
@@ -379,8 +428,15 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
           <CardTitle className="text-xl">{currentQuestion.questionText}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {currentQuestion.type === 'multi_select' && (
+            <p className="text-sm text-muted-foreground mb-2">Select all that apply</p>
+          )}
           {currentQuestion.choices?.map((choice: import("@/lib/types").QuestionChoice, index: number) => {
-            const isSelected = localAnswers[currentQuestion.id] === index
+            const isMultiSelect = currentQuestion.type === 'multi_select'
+            const currentAnswers = localAnswers[currentQuestion.id]
+            const isSelected = isMultiSelect
+              ? Array.isArray(currentAnswers) && currentAnswers.includes(index)
+              : currentAnswers === index
 
             return (
               <button
@@ -393,11 +449,21 @@ export function ExamInterface({ session, document, questions, isCompleted, initi
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                    isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
-                  }`}>
-                    {isSelected ? <CheckCircle2 className="h-4 w-4" /> : (typeof choice.index === 'string' ? choice.index : String.fromCharCode(65 + index))}
-                  </div>
+                  {isMultiSelect ? (
+                    // Checkbox for multi-select
+                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 ${
+                      isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                    }`}>
+                      {isSelected && <CheckCircle2 className="h-4 w-4" />}
+                    </div>
+                  ) : (
+                    // Radio button for single-select
+                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                      isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                    }`}>
+                      {isSelected ? <CheckCircle2 className="h-4 w-4" /> : (typeof choice.index === 'string' ? choice.index : String.fromCharCode(65 + index))}
+                    </div>
+                  )}
                   <span className="flex-1">{choice.text}</span>
                 </div>
               </button>
