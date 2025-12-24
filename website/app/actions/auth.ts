@@ -13,8 +13,10 @@ import {
   ensureAdminCode,
   type AccessCode
 } from '@/lib/db/access-codes'
+import { withRateLimit, RateLimitPresets } from '@/lib/utils/server-action-limiter'
 
-export async function validateAccessCode(code: string) {
+// Internal implementation (not exported)
+async function validateAccessCodeInternal(code: string) {
   try {
     // Ensure admin code exists from env variable (if set)
     await ensureAdminCode()
@@ -67,6 +69,12 @@ export async function validateAccessCode(code: string) {
   }
 }
 
+// Export with rate limiting (5 requests per 15 minutes)
+export const validateAccessCode = withRateLimit(
+  RateLimitPresets.auth,
+  validateAccessCodeInternal
+)
+
 export async function signOut() {
   const cookieStore = await cookies()
   cookieStore.delete('access-token')
@@ -83,7 +91,8 @@ export async function getAccessCodes() {
   }
 }
 
-export async function createAccessCode(data: {
+// Internal implementation (not exported)
+async function createAccessCodeInternal(data: {
   code: string
   daysValid: number
   maxUses: number
@@ -110,7 +119,14 @@ export async function createAccessCode(data: {
   }
 }
 
-export async function toggleCodeStatus(id: string, active: boolean) {
+// Export with rate limiting (5 requests per 15 minutes)
+export const createAccessCode = withRateLimit(
+  RateLimitPresets.auth,
+  createAccessCodeInternal
+)
+
+// Internal implementation (not exported)
+async function toggleCodeStatusInternal(id: string, active: boolean) {
   try {
     await updateAccessCode(id, { active })
     return { success: true }
@@ -120,7 +136,14 @@ export async function toggleCodeStatus(id: string, active: boolean) {
   }
 }
 
-export async function removeAccessCode(id: string) {
+// Export with rate limiting
+export const toggleCodeStatus = withRateLimit(
+  RateLimitPresets.auth,
+  toggleCodeStatusInternal
+)
+
+// Internal implementation (not exported)
+async function removeAccessCodeInternal(id: string) {
   try {
     await deleteAccessCode(id)
     return { success: true }
@@ -129,3 +152,9 @@ export async function removeAccessCode(id: string) {
     return { error: 'Failed to delete code' }
   }
 }
+
+// Export with rate limiting
+export const removeAccessCode = withRateLimit(
+  RateLimitPresets.auth,
+  removeAccessCodeInternal
+)

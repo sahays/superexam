@@ -186,6 +186,34 @@ APIs** to parse content and extract questions. This version replaces the previou
 
 ---
 
+## Epic 11: Website Rate Limiting & Bot Protection ✅ COMPLETE
+
+**Goal:** Comprehensive protection for Next.js website against abuse and bots.
+
+### Story 11.1: Bot Detection Infrastructure
+
+- [x] Create bot detection utility library.
+- [x] Implement user-agent validation.
+- [x] Add request signature validation.
+- [x] Suspicious request pattern detection.
+
+### Story 11.2: Server Action Rate Limiting
+
+- [x] Create rate limiting wrapper utility.
+- [x] Apply to auth actions (5 requests/15min).
+- [x] Apply to document actions (10 requests/min).
+- [x] Apply to prompt actions (20 requests/min).
+- [x] Apply to exam actions (30 requests/min).
+
+### Story 11.3: Global Middleware Protection
+
+- [x] Create Next.js middleware.
+- [x] Bot detection integration.
+- [x] Authentication verification.
+- [x] Path-specific protection.
+
+---
+
 ## Epic 10: Access Code Authentication ✅ COMPLETE
 
 **Goal:** Temporary access via codes (no accounts). 12-hour sessions.

@@ -3,6 +3,7 @@
 import { db, collection } from "@/lib/db/firebase";
 import { SystemPrompt, CustomPrompt } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+import { withRateLimit, RateLimitPresets } from "@/lib/utils/server-action-limiter";
 
 // Get All Prompts (for client components)
 export async function getAllPrompts() {
@@ -29,8 +30,8 @@ export async function getAllPrompts() {
   }
 }
 
-// System Prompts
-export async function createSystemPrompt(name: string, content: string) {
+// System Prompts - Internal implementation
+async function createSystemPromptInternal(name: string, content: string) {
   try {
     if (!name || !content) {
       return { error: 'Name and content are required' };
@@ -57,7 +58,14 @@ export async function createSystemPrompt(name: string, content: string) {
   }
 }
 
-export async function updateSystemPrompt(id: string, data: { name?: string; content?: string }) {
+// Export with rate limiting
+export const createSystemPrompt = withRateLimit(
+  RateLimitPresets.prompt,
+  createSystemPromptInternal
+)
+
+// Internal implementation
+async function updateSystemPromptInternal(id: string, data: { name?: string; content?: string }) {
   try {
     if (!id) {
       return { error: 'ID is required' };
@@ -79,7 +87,14 @@ export async function updateSystemPrompt(id: string, data: { name?: string; cont
   }
 }
 
-export async function deleteSystemPrompt(id: string) {
+// Export with rate limiting
+export const updateSystemPrompt = withRateLimit(
+  RateLimitPresets.prompt,
+  updateSystemPromptInternal
+)
+
+// Internal implementation
+async function deleteSystemPromptInternal(id: string) {
   try {
     if (!id) {
       return { error: 'ID is required' };
@@ -95,8 +110,14 @@ export async function deleteSystemPrompt(id: string) {
   }
 }
 
-// Custom Prompts
-export async function createCustomPrompt(name: string, content: string) {
+// Export with rate limiting
+export const deleteSystemPrompt = withRateLimit(
+  RateLimitPresets.prompt,
+  deleteSystemPromptInternal
+)
+
+// Custom Prompts - Internal implementation
+async function createCustomPromptInternal(name: string, content: string) {
   try {
     if (!name || !content) {
       return { error: 'Name and content are required' };
@@ -123,7 +144,14 @@ export async function createCustomPrompt(name: string, content: string) {
   }
 }
 
-export async function updateCustomPrompt(id: string, data: { name?: string; content?: string }) {
+// Export with rate limiting
+export const createCustomPrompt = withRateLimit(
+  RateLimitPresets.prompt,
+  createCustomPromptInternal
+)
+
+// Internal implementation
+async function updateCustomPromptInternal(id: string, data: { name?: string; content?: string }) {
   try {
     if (!id) {
       return { error: 'ID is required' };
@@ -145,7 +173,14 @@ export async function updateCustomPrompt(id: string, data: { name?: string; cont
   }
 }
 
-export async function deleteCustomPrompt(id: string) {
+// Export with rate limiting
+export const updateCustomPrompt = withRateLimit(
+  RateLimitPresets.prompt,
+  updateCustomPromptInternal
+)
+
+// Internal implementation
+async function deleteCustomPromptInternal(id: string) {
   try {
     if (!id) {
       return { error: 'ID is required' };
@@ -160,3 +195,9 @@ export async function deleteCustomPrompt(id: string) {
     return { error: 'Failed to delete custom prompt' };
   }
 }
+
+// Export with rate limiting
+export const deleteCustomPrompt = withRateLimit(
+  RateLimitPresets.prompt,
+  deleteCustomPromptInternal
+)

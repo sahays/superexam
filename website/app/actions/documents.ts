@@ -6,6 +6,7 @@ import { revalidatePath, unstable_noStore } from "next/cache";
 import { Storage } from "@google-cloud/storage";
 import { generateQuestionsFromPDF } from "@/lib/services/ai";
 import { GoogleAuth } from "google-auth-library";
+import { withRateLimit, RateLimitPresets } from "@/lib/utils/server-action-limiter";
 
 // Initialize GCS
 const storage = new Storage();
@@ -14,7 +15,8 @@ const bucketName = process.env.GCS_BUCKET_NAME || 'superexam-uploads';
 // Initialize Google Auth
 const auth = new GoogleAuth();
 
-export async function uploadDocument(formData: FormData) {
+// Internal implementation (not exported)
+async function uploadDocumentInternal(formData: FormData) {
   unstable_noStore();
   try {
     const file = formData.get('file') as File;
@@ -34,7 +36,7 @@ export async function uploadDocument(formData: FormData) {
 
     // Ensure unique filename
     const uniqueFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    
+
     try {
       await storage.bucket(bucketName).file(uniqueFilename).save(buffer);
     } catch (gcsError) {
@@ -67,7 +69,14 @@ export async function uploadDocument(formData: FormData) {
   }
 }
 
-export async function processDocument(docId: string, systemPromptId: string, customPromptId: string) {
+// Export with rate limiting (10 requests per minute)
+export const uploadDocument = withRateLimit(
+  RateLimitPresets.document,
+  uploadDocumentInternal
+)
+
+// Internal implementation (not exported)
+async function processDocumentInternal(docId: string, systemPromptId: string, customPromptId: string) {
   unstable_noStore();
   try {
     // 1. Verify document exists
@@ -161,6 +170,12 @@ export async function processDocument(docId: string, systemPromptId: string, cus
   }
 }
 
+// Export with rate limiting (10 requests per minute)
+export const processDocument = withRateLimit(
+  RateLimitPresets.document,
+  processDocumentInternal
+)
+
 export async function getDocumentStatus(docId: string) {
   unstable_noStore();
   try {
@@ -188,7 +203,8 @@ export async function getDocumentStatus(docId: string) {
   }
 }
 
-export async function deleteDocument(docId: string) {
+// Internal implementation (not exported)
+async function deleteDocumentInternal(docId: string) {
   unstable_noStore();
   try {
     // 1. Get document to find file path
@@ -227,6 +243,12 @@ export async function deleteDocument(docId: string) {
     return { error: 'Failed to delete document' };
   }
 }
+
+// Export with rate limiting (10 requests per minute)
+export const deleteDocument = withRateLimit(
+  RateLimitPresets.document,
+  deleteDocumentInternal
+)
 
 export async function getDocumentDetails(docId: string) {
   unstable_noStore();

@@ -2,6 +2,7 @@
 
 import { db, collection } from "@/lib/db/firebase";
 import { revalidatePath } from "next/cache";
+import { withRateLimit, RateLimitPresets } from "@/lib/utils/server-action-limiter";
 
 interface CreateExamSessionParams {
   documentId: string;
@@ -11,7 +12,8 @@ interface CreateExamSessionParams {
   randomize: boolean;
 }
 
-export async function createExamSession(params: CreateExamSessionParams) {
+// Internal implementation
+async function createExamSessionInternal(params: CreateExamSessionParams) {
   try {
     const { documentId, questionCount, timerEnabled, timerMinutes, randomize } = params;
 
@@ -71,6 +73,12 @@ export async function createExamSession(params: CreateExamSessionParams) {
   }
 }
 
+// Export with rate limiting
+export const createExamSession = withRateLimit(
+  RateLimitPresets.exam,
+  createExamSessionInternal
+)
+
 export async function getExamSession(sessionId: string) {
   try {
     const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
@@ -98,7 +106,8 @@ export async function getExamSession(sessionId: string) {
   }
 }
 
-export async function updateExamAnswer(sessionId: string, questionId: string, answer: number | number[]) {
+// Internal implementation
+async function updateExamAnswerInternal(sessionId: string, questionId: string, answer: number | number[]) {
   try {
     const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
 
@@ -113,6 +122,12 @@ export async function updateExamAnswer(sessionId: string, questionId: string, an
     return { error: 'Failed to save answer' };
   }
 }
+
+// Export with rate limiting
+export const updateExamAnswer = withRateLimit(
+  RateLimitPresets.exam,
+  updateExamAnswerInternal
+)
 
 export async function updateCurrentQuestion(sessionId: string, questionIndex: number) {
   try {
@@ -143,7 +158,8 @@ export async function updateCurrentQuestion(sessionId: string, questionIndex: nu
   }
 }
 
-export async function submitExam(sessionId: string) {
+// Internal implementation
+async function submitExamInternal(sessionId: string) {
   try {
     const sessionRef = db.collection(collection('exam-sessions')).doc(sessionId);
     const sessionSnap = await sessionRef.get();
@@ -223,6 +239,12 @@ export async function submitExam(sessionId: string) {
     return { error: 'Failed to submit exam' };
   }
 }
+
+// Export with rate limiting
+export const submitExam = withRateLimit(
+  RateLimitPresets.exam,
+  submitExamInternal
+)
 
 export async function getExamQuestions(documentId: string, questionIds: string[]) {
   try {
